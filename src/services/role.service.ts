@@ -28,7 +28,17 @@ import { userManagementApi } from './api-client';
 import { createResource, updateResource, deleteResource, getResource, buildQueryParams } from '@/utils/serviceHelpers';
 import { getApiHeaders } from './apiUtils';
 
+/**
+ * Service class for managing role operations
+ * Handles CRUD operations for roles and role-scope associations
+ */
 export class RoleService {
+  /**
+   * Retrieves a paginated list of roles with optional filtering
+   * @param {FilterParams & { filter?: RoleFilterRequest }} params - Pagination parameters and optional role filter
+   * @returns {Promise<PaginatedResponse<Role>>} Paginated response containing roles
+   * @throws {Error} If the API request fails
+   */
   async getRoles(params: FilterParams & { filter?: RoleFilterRequest }): Promise<PaginatedResponse<Role>> {
     // Build filter request - backend requires roles field even if empty
     const filterRequest: Record<string, string[]> = {
@@ -82,17 +92,34 @@ export class RoleService {
     }
   }
 
+  /**
+   * Retrieves a single role by its name
+   * @param {string} name - The unique name of the role
+   * @returns {Promise<Role>} The role details
+   * @throws {Error} If the role is not found
+   */
   async getRoleByName(name: string): Promise<Role> {
     console.log('Role Service - Getting role by name:', name);
     return getResource<Role>(`/v1/roles/${name}`);
   }
 
+  /**
+   * Retrieves multiple roles by their IDs
+   * @param {number[]} roleIds - Array of role IDs to retrieve
+   * @returns {Promise<Role[]>} Array of role objects
+   */
   async getRolesByIds(roleIds: number[]): Promise<Role[]> {
     console.log('Role Service - Getting roles by IDs:', roleIds);
     const response: { results?: Role[] } = await userManagementApi.post('/v1/roles/rolesById', { roleId: roleIds });
     return response.results || [];
   }
 
+  /**
+   * Creates a new role in the system
+   * @param {CreateRoleRequest} roleData - The role data for creation
+   * @returns {Promise<Role>} The created role object
+   * @throws {Error} If role creation fails
+   */
   async createRole(roleData: CreateRoleRequest): Promise<Role> {
     console.log('=== CREATE ROLE DEBUG START ===');
     console.log('Role Service - Creating role with data:', roleData);
@@ -106,6 +133,13 @@ export class RoleService {
     return role;
   }
 
+  /**
+   * Updates an existing role
+   * @param {string} name - The unique name of the role to update
+   * @param {UpdateRoleRequest} roleData - The role data to update
+   * @returns {Promise<Role>} The updated role object
+   * @throws {Error} If role update fails
+   */
   async updateRole(name: string, roleData: UpdateRoleRequest): Promise<Role> {
     console.log('=== UPDATE ROLE DEBUG START ===');
     console.log('Role Service - Updating role with data:', { name, roleData });
@@ -119,11 +153,21 @@ export class RoleService {
     return role;
   }
 
+  /**
+   * Deletes a role by its name
+   * @param {string} name - The unique name of the role to delete
+   * @returns {Promise<void>} Completes when role is deleted
+   * @throws {Error} If role deletion fails
+   */
   async deleteRole(name: string): Promise<void> {
     console.log('Role Service - Deleting role:', name);
     await deleteResource(`/v1/roles/${name}`);
   }
 
+  /**
+   * Retrieves all roles in the system
+   * @returns {Promise<Role[]>} Array of all role objects
+   */
   async getAllRoles(): Promise<Role[]> {
     console.log('Role Service - Getting all roles');
     const response = await this.getRoles({
@@ -134,10 +178,22 @@ export class RoleService {
   }
 
   // Legacy methods for backward compatibility
+  /**
+   * Assigns scopes to a role (legacy method for backward compatibility)
+   * @param {string} roleName - The name of the role
+   * @param {string[]} scopeNames - Array of scope names to assign
+   * @returns {Promise<Role>} The updated role with assigned scopes
+   */
   async assignScopesToRole(roleName: string, scopeNames: string[]): Promise<Role> {
     return this.updateRole(roleName, { scopeNames });
   }
 
+  /**
+   * Removes scopes from a role (legacy method for backward compatibility)
+   * @param {string} roleName - The name of the role
+   * @param {string[]} scopeNames - Array of scope names to remove
+   * @returns {Promise<Role>} The updated role with removed scopes
+   */
   async removeScopesFromRole(roleName: string, scopeNames: string[]): Promise<Role> {
     const currentRole = await this.getRoleByName(roleName);
     const currentScopeNames = currentRole.scopes?.map(scope => scope.name) || [];

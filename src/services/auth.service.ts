@@ -26,9 +26,14 @@ export interface TokenResponse {
   scope: string;
 }
 
+/**
+ * Service class for handling OAuth2 authentication
+ * Manages login, logout, token exchange, and token refresh operations
+ */
 export class AuthService {
   /**
    * Generate a cryptographically secure random string for PKCE code verifier
+   * @returns {string} A base64URL-encoded random string for use as PKCE code verifier
    */
   private generateCodeVerifier(): string {
     const array = new Uint8Array(32);
@@ -38,6 +43,8 @@ export class AuthService {
 
   /**
    * Generate PKCE code challenge from code verifier using SHA-256
+   * @param {string} verifier - The code verifier string to hash
+   * @returns {Promise<string>} A base64URL-encoded SHA-256 hash of the verifier
    */
   private async generateCodeChallenge(verifier: string): Promise<string> {
     const encoder = new TextEncoder();
@@ -49,6 +56,8 @@ export class AuthService {
   /**
    * Base64 URL encode (RFC 4648)
    * NOSONAR - btoa() is required for OAuth2 PKCE implementation (RFC 7636)
+   * @param {Uint8Array} buffer - The byte array to encode
+   * @returns {string} A base64URL-encoded string
    */
   private base64URLEncode(buffer: Uint8Array): string {
     const base64 = btoa(String.fromCharCode(...buffer));
@@ -61,6 +70,7 @@ export class AuthService {
   /**
    * Generate random state for CSRF protection
    * NOSONAR - localStorage/sessionStorage required for OAuth2 state management
+   * @returns {string} A random state string stored in session and local storage
    */
   private generateState(): string {
     const state = this.generateCodeVerifier();
@@ -76,6 +86,8 @@ export class AuthService {
   /**
    * Initialize OAuth2 Authorization Code Grant flow with PKCE
    * Redirects user to the authorization server
+   * @returns {Promise<void>} Redirects to authorization server, does not return
+   * @throws {Error} If login initialization fails
    */
   async initiateLogin(): Promise<void> {
     try {
@@ -126,6 +138,10 @@ export class AuthService {
 
   /**
    * Handle the OAuth2 callback with authorization code
+   * @param {string} code - The authorization code from OAuth2 provider
+   * @param {string} state - The state parameter for CSRF protection
+   * @returns {Promise<{ user: AuthUser; tokens: AuthTokens }>} The authenticated user and access tokens
+   * @throws {Error} If state verification fails or token exchange fails
    */
   async handleAuthCallback(code: string, state: string): Promise<{ user: AuthUser; tokens: AuthTokens }> {
     try {
@@ -211,6 +227,8 @@ export class AuthService {
 
   /**
    * Prepare form data for token exchange
+   * @param {string} code - The authorization code to exchange
+   * @returns {URLSearchParams} Form data with grant type, code, and authentication parameters
    */
   private prepareTokenExchangeFormData(code: string): URLSearchParams {
     const formData = new URLSearchParams();
@@ -243,6 +261,9 @@ export class AuthService {
   /**
    * Exchange authorization code for access token
    * Supports both PKCE and legacy client_secret flows
+   * @param {string} code - The authorization code to exchange
+   * @returns {Promise<TokenResponse>} The token response with access and refresh tokens
+   * @throws {Error} If token exchange fails
    */
   private async exchangeCodeForTokens(code: string): Promise<TokenResponse> {
     const formData = this.prepareTokenExchangeFormData(code);
@@ -305,6 +326,8 @@ export class AuthService {
 
   /**
    * Get user profile information using token introspection
+   * @param {string} accessToken - The access token to introspect
+   * @returns {Promise<AuthUser>} The user profile information
    */
   private async getUserProfile(accessToken: string): Promise<AuthUser> {
     try {
@@ -355,6 +378,9 @@ export class AuthService {
 
   /**
    * Refresh access token using refresh token
+   * @param {string} refreshToken - The refresh token to use
+   * @returns {Promise<AuthTokens>} The new access and refresh tokens
+   * @throws {Error} If token refresh fails
    */
   async refreshToken(refreshToken: string): Promise<AuthTokens> {
     const formData = new URLSearchParams();
@@ -394,6 +420,7 @@ export class AuthService {
 
   /**
    * Logout user by revoking tokens
+   * @returns {Promise<void>} Completes when logout is finished
    */
   async logout(): Promise<void> {
     const token = this.getStoredToken();
@@ -430,6 +457,8 @@ export class AuthService {
 
   /**
    * Store tokens in localStorage
+   * @param {TokenResponse} tokens - The token response containing access and refresh tokens
+   * @returns {void}
    */
   private storeTokens(tokens: TokenResponse): void {
     localStorage.setItem(OAUTH_CONFIG.TOKEN_STORAGE_KEY, tokens.access_token);
@@ -446,6 +475,8 @@ export class AuthService {
 
   /**
    * Store user profile in localStorage
+   * @param {AuthUser} userProfile - The user profile to store
+   * @returns {void}
    */
   private storeUserProfile(userProfile: AuthUser): void {
     localStorage.setItem('uidam_user_profile', JSON.stringify(userProfile));
@@ -453,6 +484,7 @@ export class AuthService {
 
   /**
    * Get stored access token
+   * @returns {string | null} The stored access token or null if not found
    */
   public getStoredToken(): string | null {
     return localStorage.getItem(OAUTH_CONFIG.TOKEN_STORAGE_KEY);
@@ -460,6 +492,7 @@ export class AuthService {
 
   /**
    * Get stored token scopes
+   * @returns {string[]} Array of scope strings from stored token
    */
   public getStoredScopes(): string[] {
     const scopes = localStorage.getItem('uidam_token_scopes');
@@ -468,6 +501,7 @@ export class AuthService {
 
   /**
    * Get stored refresh token
+   * @returns {string | null} The stored refresh token or null if not found
    */
   public getStoredRefreshToken(): string | null {
     return localStorage.getItem(OAUTH_CONFIG.REFRESH_TOKEN_STORAGE_KEY);
@@ -475,6 +509,7 @@ export class AuthService {
 
   /**
    * Check if token is expired
+   * @returns {boolean} True if token is expired or not found, false otherwise
    */
   public isTokenExpired(): boolean {
     const expirationTime = localStorage.getItem('uidam_token_expires_at');
@@ -485,6 +520,7 @@ export class AuthService {
 
   /**
    * Clear stored tokens
+   * @returns {void}
    */
   public clearStoredTokens(): void {
     localStorage.removeItem(OAUTH_CONFIG.TOKEN_STORAGE_KEY);
@@ -496,6 +532,7 @@ export class AuthService {
 
   /**
    * Check if user is authenticated
+   * @returns {boolean} True if user has valid non-expired token, false otherwise
    */
   public isAuthenticated(): boolean {
     const token = this.getStoredToken();

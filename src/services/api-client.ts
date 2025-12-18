@@ -18,9 +18,17 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { API_CONFIG, OAUTH_CONFIG } from '@config/app.config';
 
+/**
+ * API client for making HTTP requests to the backend
+ * Handles authentication, error handling, and request/response interceptors
+ */
 class ApiClient {
   private readonly axiosInstance: AxiosInstance;
 
+  /**
+   * Creates an instance of ApiClient
+   * @param {string} baseURL - The base URL for API requests
+   */
   constructor(baseURL: string) {
     this.axiosInstance = axios.create({
       baseURL,
@@ -35,6 +43,11 @@ class ApiClient {
     this.setupInterceptors();
   }
 
+  /**
+   * Sets up request and response interceptors for the axios instance
+   * Adds authentication tokens, correlation IDs, and handles token refresh
+   * @private
+   */
   private setupInterceptors() {
     // Request interceptor to add auth token and required headers
     this.axiosInstance.interceptors.request.use(
@@ -138,24 +151,49 @@ class ApiClient {
     );
   }
 
+  /**
+   * Retrieves the stored authentication token from localStorage
+   * @private
+   * @returns {string | null} The stored token or null if not found
+   */
   // NOSONAR - localStorage required for OAuth2 token storage (industry standard)
   private getStoredToken(): string | null {
     return localStorage.getItem(OAUTH_CONFIG.TOKEN_STORAGE_KEY);
   }
 
+  /**
+   * Retrieves the stored refresh token from localStorage
+   * @private
+   * @returns {string | null} The stored refresh token or null if not found
+   */
   private getStoredRefreshToken(): string | null {
     return localStorage.getItem(OAUTH_CONFIG.REFRESH_TOKEN_STORAGE_KEY);
   }
 
+  /**
+   * Stores the authentication token in localStorage
+   * @private
+   * @param {string} token - The authentication token to store
+   */
   private setStoredToken(token: string): void {
     localStorage.setItem(OAUTH_CONFIG.TOKEN_STORAGE_KEY, token);
   }
 
+  /**
+   * Clears all stored tokens from localStorage
+   * @private
+   */
   private clearStoredTokens(): void {
     localStorage.removeItem(OAUTH_CONFIG.TOKEN_STORAGE_KEY);
     localStorage.removeItem(OAUTH_CONFIG.REFRESH_TOKEN_STORAGE_KEY);
   }
 
+  /**
+   * Refreshes the access token using the refresh token
+   * @private
+   * @param {string} refreshToken - The refresh token to use
+   * @returns {Promise<string>} A promise that resolves to the new access token
+   */
   private async refreshAccessToken(refreshToken: string): Promise<string> {
     const response = await axios.post(`${API_CONFIG.AUTH_SERVER_URL}/oauth2/token`, {
       grant_type: 'refresh_token',
@@ -166,38 +204,80 @@ class ApiClient {
     return response.data.access_token;
   }
 
-  // HTTP methods
+  /**
+   * Makes a GET request to the specified endpoint
+   * @param {string} url - The endpoint URL
+   * @param {AxiosRequestConfig} [config] - Optional axios request configuration
+   * @returns {Promise<T>} The response data
+   * @template T The expected response type
+   */
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await this.axiosInstance.get(url, config);
     return response.data;
   }
 
+  /**
+   * Makes a POST request to the specified endpoint
+   * @param {string} url - The endpoint URL
+   * @param {unknown} [data] - The request payload
+   * @param {AxiosRequestConfig} [config] - Optional axios request configuration
+   * @returns {Promise<T>} The response data
+   * @template T The expected response type
+   */
   async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await this.axiosInstance.post(url, data, config);
     return response.data;
   }
 
+  /**
+   * Makes a PUT request to the specified endpoint
+   * @param {string} url - The endpoint URL
+   * @param {unknown} [data] - The request payload
+   * @param {AxiosRequestConfig} [config] - Optional axios request configuration
+   * @returns {Promise<T>} The response data
+   * @template T The expected response type
+   */
   async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await this.axiosInstance.put(url, data, config);
     return response.data;
   }
 
+  /**
+   * Makes a PATCH request to the specified endpoint
+   * @param {string} url - The endpoint URL
+   * @param {unknown} [data] - The request payload
+   * @param {AxiosRequestConfig} [config] - Optional axios request configuration
+   * @returns {Promise<T>} The response data
+   * @template T The expected response type
+   */
   async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await this.axiosInstance.patch(url, data, config);
     return response.data;
   }
 
+  /**
+   * Makes a DELETE request to the specified endpoint
+   * @param {string} url - The endpoint URL
+   * @param {AxiosRequestConfig} [config] - Optional axios request configuration
+   * @returns {Promise<T>} The response data
+   * @template T The expected response type
+   */
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await this.axiosInstance.delete(url, config);
     return response.data;
   }
 
-  // Set authorization token
+  /**
+   * Sets the authorization token for future requests
+   * @param {string} token - The authentication token to set
+   */
   setAuthToken(token: string): void {
     this.setStoredToken(token);
   }
 
-  // Clear authorization token
+  /**
+   * Clears the authorization token from storage
+   */
   clearAuthToken(): void {
     this.clearStoredTokens();
   }

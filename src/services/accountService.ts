@@ -119,12 +119,20 @@ export interface UpdateUserAccountRolesRequest {
 }
 
 // Account Management Service Class
+/**
+ * Service class for managing account operations
+ * Handles CRUD operations, filtering, and user-account-role mappings
+ */
 export class AccountService {
   // =============================================================================
   // ACCOUNT MANAGEMENT APIs
   // =============================================================================
 
-  // Create Account
+  /**
+   * Creates a new account in the system
+   * @param {CreateAccountRequest} account - The account data for creation
+   * @returns {Promise<{ success: boolean; data?: Account; error?: string }>} Result object with success status and account data or error message
+   */
   static async createAccount(account: CreateAccountRequest): Promise<{ success: boolean; data?: Account; error?: string }> {
     try {
       const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts`, {
@@ -157,7 +165,11 @@ export class AccountService {
     }
   }
 
-  // Get Account by ID
+  /**
+   * Retrieves an account by its ID
+   * @param {string} accountId - The unique identifier of the account
+   * @returns {Promise<{ success: boolean; data?: Account; error?: string }>} Result object with success status and account data or error message
+   */
   static async getAccount(accountId: string): Promise<{ success: boolean; data?: Account; error?: string }> {
     try {
       const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}`, {
@@ -189,7 +201,12 @@ export class AccountService {
     }
   }
 
-  // Update Account - API uses POST method for updates
+  /**
+   * Updates an existing account's information
+   * @param {string} accountId - The unique identifier of the account to update
+   * @param {UpdateAccountRequest} accountData - The account data to update
+   * @returns {Promise<{ success: boolean; data?: string; error?: string }>} Result object with success status and response data or error message
+   */
   static async updateAccount(accountId: string, accountData: UpdateAccountRequest): Promise<{ success: boolean; data?: string; error?: string }> {
     try {
       const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}`, {
@@ -223,7 +240,11 @@ export class AccountService {
     }
   }
 
-  // Delete Account
+  /**
+   * Deletes an account by its ID
+   * @param {string} accountId - The unique identifier of the account to delete
+   * @returns {Promise<{ success: boolean; data?: string; error?: string }>} Result object with success status and response data or error message
+   */
   static async deleteAccount(accountId: string): Promise<{ success: boolean; data?: string; error?: string }> {
     try {
       const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}`, {
@@ -255,7 +276,11 @@ export class AccountService {
     }
   }
 
-  // Helper function to get error message based on HTTP status code
+  /**
+   * Helper function to get error message based on HTTP status code
+   * @param {number} status - The HTTP status code
+   * @returns {string} User-friendly error message
+   */
   private static getErrorMessageForStatus(status: number): string {
     if (status === 405) {
       return 'Server configuration error. Please contact support.';
@@ -272,7 +297,13 @@ export class AccountService {
     return 'Failed to load accounts';
   }
 
-  // Filter Accounts
+  /**
+   * Filters and searches accounts based on criteria with pagination support
+   * @param {AccountFilter} filter - Filter criteria for accounts
+   * @param {AccountSearchParams} [params] - Optional pagination and sorting parameters
+   * @returns {Promise<{ success: boolean; data?: { content: Account[]; totalElements: number; }; error?: string }>} Result object with filtered accounts or error
+   * @throws {Error} If the API request fails
+   */
   static async filterAccounts(
     filter: AccountFilter, 
     params?: AccountSearchParams
@@ -340,12 +371,21 @@ export class AccountService {
     }
   }
 
-  // Get all accounts (convenience method)
+  /**
+   * Retrieves all accounts in the system
+   * @param {AccountSearchParams} [params] - Optional pagination and sorting parameters
+   * @returns {Promise<{ success: boolean; data?: { content: Account[]; totalElements: number; }; error?: string }>} Result object with all accounts or error
+   */
   static async getAllAccounts(params?: AccountSearchParams): Promise<{ success: boolean; data?: { content: Account[]; totalElements: number; }; error?: string }> {
     return this.filterAccounts({}, params);
   }
 
-  // Get accounts by status
+  /**
+   * Retrieves accounts filtered by status
+   * @param {AccountStatus[]} status - Array of account statuses to filter by
+   * @param {AccountSearchParams} [params] - Optional pagination and sorting parameters
+   * @returns {Promise<{ success: boolean; data?: { content: Account[]; totalElements: number; }; error?: string }>} Result object with filtered accounts or error
+   */
   static async getAccountsByStatus(
     status: AccountStatus[], 
     params?: AccountSearchParams
@@ -353,7 +393,12 @@ export class AccountService {
     return this.filterAccounts({ status }, params);
   }
 
-  // Get child accounts
+  /**
+   * Retrieves all child accounts for a given parent account
+   * @param {string} parentId - The unique identifier of the parent account
+   * @param {AccountSearchParams} [params] - Optional pagination and sorting parameters
+   * @returns {Promise<{ success: boolean; data?: { content: Account[]; totalElements: number; }; error?: string }>} Result object with child accounts or error
+   */
   static async getChildAccounts(
     parentId: string, 
     params?: AccountSearchParams
@@ -361,7 +406,12 @@ export class AccountService {
     return this.filterAccounts({ parentIds: [parentId] }, params);
   }
 
-  // Search accounts by name
+  /**
+   * Searches for accounts by name
+   * @param {string[]} accountNames - Array of account names to search for
+   * @param {AccountSearchParams} [params] - Optional pagination and sorting parameters
+   * @returns {Promise<{ success: boolean; data?: { content: Account[]; totalElements: number; }; error?: string }>} Result object with matching accounts or error
+   */
   static async searchAccountsByName(
     accountNames: string[], 
     params?: AccountSearchParams
@@ -375,7 +425,11 @@ export class AccountService {
   // USER ACCOUNT ROLE MAPPING APIs
   // =============================================================================
 
-  // Assign User to Account with Roles
+  /**
+   * Assigns a user to an account with specified roles
+   * @param {AssignUserToAccountRequest} assignment - Contains userId, accountId, and roleIds
+   * @returns {Promise<ApiResponse<UserAccountRoleMapping>>} The API response containing the created mapping
+   */
   static async assignUserToAccount(assignment: AssignUserToAccountRequest): Promise<ApiResponse<UserAccountRoleMapping>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/user-account-mappings`, {
       method: 'POST',
@@ -386,7 +440,12 @@ export class AccountService {
     return handleApiResponse<ApiResponse<UserAccountRoleMapping>>(response);
   }
 
-  // Get User Account Mappings
+  /**
+   * Retrieves all account mappings for a specific user
+   * @param {string} userId - The unique identifier of the user
+   * @returns {Promise<UserAccountRoleMapping[]>} Array of user-account-role mappings
+   * @throws {Error} If the API request fails
+   */
   static async getUserAccountMappings(userId: string): Promise<UserAccountRoleMapping[]> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/account-mappings`, {
       method: 'GET',
@@ -403,7 +462,12 @@ export class AccountService {
     return data;
   }
 
-  // Get Account User Mappings
+  /**
+   * Retrieves all user mappings for a specific account
+   * @param {string} accountId - The unique identifier of the account
+   * @returns {Promise<UserAccountRoleMapping[]>} Array of user-account-role mappings
+   * @throws {Error} If the API request fails
+   */
   static async getAccountUserMappings(accountId: string): Promise<UserAccountRoleMapping[]> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}/user-mappings`, {
       method: 'GET',
@@ -420,7 +484,13 @@ export class AccountService {
     return data;
   }
 
-  // Update User Account Roles
+  /**
+   * Updates the roles assigned to a user within a specific account
+   * @param {string} userId - The unique identifier of the user
+   * @param {string} accountId - The unique identifier of the account
+   * @param {UpdateUserAccountRolesRequest} roleData - Contains the new role IDs to assign
+   * @returns {Promise<ApiResponse<UserAccountRoleMapping>>} The API response containing the updated mapping
+   */
   static async updateUserAccountRoles(
     userId: string, 
     accountId: string, 
@@ -435,7 +505,12 @@ export class AccountService {
     return handleApiResponse<ApiResponse<UserAccountRoleMapping>>(response);
   }
 
-  // Remove User from Account
+  /**
+   * Removes a user from an account (deletes the user-account association)
+   * @param {string} userId - The unique identifier of the user
+   * @param {string} accountId - The unique identifier of the account
+   * @returns {Promise<ApiResponse<string>>} The API response confirming removal
+   */
   static async removeUserFromAccount(userId: string, accountId: string): Promise<ApiResponse<string>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/accounts/${accountId}`, {
       method: 'DELETE',
@@ -445,7 +520,12 @@ export class AccountService {
     return handleApiResponse<ApiResponse<string>>(response);
   }
 
-  // Bulk assign users to account
+  /**
+   * Assigns multiple users to an account with specified roles in bulk
+   * @param {string} accountId - The unique identifier of the account
+   * @param {AssignUserToAccountRequest[]} assignments - Array of user-role assignments
+   * @returns {Promise<ApiResponse<UserAccountRoleMapping[]>>} The API response containing all created mappings
+   */
   static async bulkAssignUsersToAccount(
     accountId: string, 
     assignments: AssignUserToAccountRequest[]

@@ -27,7 +27,17 @@ import { API_CONFIG } from '@/config/app.config';
 import { createResource, updateResource, deleteResource, getResource, buildQueryParams } from '@/utils/serviceHelpers';
 import { getApiHeaders } from './apiUtils';
 
+/**
+ * Service class for managing scope operations
+ * Handles CRUD operations for OAuth2 scopes
+ */
 export class ScopeService {
+  /**
+   * Retrieves a paginated list of scopes with optional filtering
+   * @param {FilterParams & { filter?: ScopeFilterRequest }} params - Pagination parameters and optional scope filter
+   * @returns {Promise<PaginatedResponse<Scope>>} Paginated response containing scopes
+   * @throws {Error} If the API request fails
+   */
   async getScopes(params: FilterParams & { filter?: ScopeFilterRequest }): Promise<PaginatedResponse<Scope>> {
     // Build filter request - backend requires scopes field even if empty
     const filterRequest: Record<string, string[]> = {
@@ -81,6 +91,12 @@ export class ScopeService {
     }
   }
 
+  /**
+   * Retrieves a single scope by its name
+   * @param {string} name - The unique name of the scope
+   * @returns {Promise<Scope>} The scope details
+   * @throws {Error} If the scope is not found
+   */
   async getScopeByName(name: string): Promise<Scope> {
     console.log('Scope Service - Getting scope by name:', name);
     return getResource<Scope>(`/v1/scopes/${name}`, {
@@ -93,6 +109,12 @@ export class ScopeService {
     });
   }
 
+  /**
+   * Creates a new scope in the system
+   * @param {CreateScopeRequest} scopeData - The scope data for creation
+   * @returns {Promise<Scope>} The created scope object
+   * @throws {Error} If scope creation fails
+   */
   async createScope(scopeData: CreateScopeRequest): Promise<Scope> {
     console.log('=== CREATE SCOPE DEBUG START ===');
     console.log('Scope Service - Creating scope with data:', scopeData);
@@ -106,6 +128,13 @@ export class ScopeService {
     return scope;
   }
 
+  /**
+   * Updates an existing scope
+   * @param {string} name - The unique name of the scope to update
+   * @param {UpdateScopeRequest} scopeData - The scope data to update
+   * @returns {Promise<Scope>} The updated scope object
+   * @throws {Error} If scope update fails
+   */
   async updateScope(name: string, scopeData: UpdateScopeRequest): Promise<Scope> {
     console.log('=== UPDATE SCOPE DEBUG START ===');
     console.log('Scope Service - Updating scope with data:', { name, scopeData });
@@ -119,11 +148,21 @@ export class ScopeService {
     return scope;
   }
 
+  /**
+   * Deletes a scope by its name
+   * @param {string} name - The unique name of the scope to delete
+   * @returns {Promise<void>} Completes when scope is deleted
+   * @throws {Error} If scope deletion fails
+   */
   async deleteScope(name: string): Promise<void> {
     console.log('Scope Service - Deleting scope:', name);
     await deleteResource(`/v1/scopes/${name}`);
   }
 
+  /**
+   * Retrieves all scopes in the system for dropdowns and selections
+   * @returns {Promise<Scope[]>} Array of all scope objects
+   */
   async getAllScopes(): Promise<Scope[]> {
     console.log('Scope Service - Getting all scopes');
     const response = await this.getScopes({

@@ -149,9 +149,16 @@ export interface UserMetaDataRequest {
   regex?: string;
 }
 
-// User Management Service Class
+/**
+ * Service class for managing user operations
+ * Handles CRUD operations, filtering, status management, and account-role associations
+ */
 export class UserService {
-  // V1 User APIs
+  /**
+   * Creates a new user using V1 API
+   * @param {CreateUserV1Request} user - The user data for creation
+   * @returns {Promise<ApiResponse<User>>} The API response containing the created user
+   */
   static async createUserV1(user: CreateUserV1Request): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users`, {
       method: 'POST',
@@ -161,6 +168,11 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Retrieves a single user by ID using V1 API
+   * @param {number} id - The unique identifier of the user
+   * @returns {Promise<ApiResponse<User>>} The API response containing the user details
+   */
   static async getUserV1(id: number): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${id}`, {
       method: 'GET',
@@ -169,6 +181,12 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Updates a user's information using JSON Patch operations (V1 API)
+   * @param {number} id - The unique identifier of the user to update
+   * @param {any[]} patches - Array of JSON Patch operations to apply
+   * @returns {Promise<ApiResponse<User>>} The API response containing the updated user
+   */
   static async updateUserV1(id: number, patches: any[]): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${id}`, {
       method: 'PATCH',
@@ -178,6 +196,12 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Deletes a user by ID using V1 API
+   * @param {number} id - The unique identifier of the user to delete
+   * @param {boolean} [externalUser] - Optional flag indicating if this is an external user
+   * @returns {Promise<ApiResponse<User>>} The API response confirming deletion
+   */
   static async deleteUserV1(id: number, externalUser?: boolean): Promise<ApiResponse<User>> {
     let urlPath = `${API_CONFIG.API_BASE_URL}/v1/users/${id}`;
     if (externalUser !== undefined) {
@@ -192,6 +216,12 @@ export class UserService {
     return handleApiResponse<ApiResponse<User>>(response);
   }
 
+  /**
+   * Filters and searches users based on criteria using V1 API
+   * @param {UsersFilterV1} filter - Filter criteria for users
+   * @param {UserSearchParams} [params] - Optional pagination and sorting parameters
+   * @returns {Promise<ApiResponse<User[]>>} The API response containing filtered users
+   */
   static async filterUsersV1(filter: UsersFilterV1, params?: UserSearchParams): Promise<ApiResponse<User[]>> {
     const urlPath = `${API_CONFIG.API_BASE_URL}/v1/users/filter`;
     
@@ -215,6 +245,11 @@ export class UserService {
   }
 
   // V2 User APIs
+  /**
+   * Creates a new user with account-role associations using V2 API
+   * @param {CreateUserV2Request} user - The user data including account associations
+   * @returns {Promise<ApiResponse<User>>} The API response containing the created user
+   */
   static async createUserV2(user: CreateUserV2Request): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v2/users`, {
       method: 'POST',
@@ -225,6 +260,11 @@ export class UserService {
     return handleApiResponse<ApiResponse<User>>(response);
   }
 
+  /**
+   * Retrieves a single user with account associations by ID using V2 API
+   * @param {number} id - The unique identifier of the user
+   * @returns {Promise<ApiResponse<User>>} The API response containing the user with accounts
+   */
   static async getUserV2(id: number): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v2/users/${id}`, {
       method: 'GET',
@@ -233,6 +273,12 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Updates a user's information including account associations using JSON Patch (V2 API)
+   * @param {number} id - The unique identifier of the user to update
+   * @param {any[]} patches - Array of JSON Patch operations to apply
+   * @returns {Promise<ApiResponse<User>>} The API response containing the updated user
+   */
   static async updateUserV2(id: number, patches: any[]): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v2/users/${id}`, {
       method: 'PATCH',
@@ -243,6 +289,13 @@ export class UserService {
     return handleApiResponse<ApiResponse<User>>(response);
   }
 
+  /**
+   * Filters and searches users with account associations based on criteria using V2 API
+   * @param {UsersFilterV2} filter - Filter criteria including account names
+   * @param {UserSearchParams} [params] - Optional pagination and sorting parameters
+   * @returns {Promise<User[]>} Array of filtered users
+   * @throws {Error} If the API request fails or returns an error status
+   */
   static async filterUsersV2(filter: UsersFilterV2, params?: UserSearchParams): Promise<User[]> {
     // Use full URL with API base
     const urlPath = `${API_CONFIG.API_BASE_URL}/v2/users/filter`;
@@ -293,6 +346,11 @@ export class UserService {
   }
 
   // Special User Types
+  /**
+   * Creates an external user without password authentication
+   * @param {ExternalUserRequest} user - The external user data (password not required)
+   * @returns {Promise<ApiResponse<User>>} The API response containing the created external user
+   */
   static async createExternalUser(user: ExternalUserRequest): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/external`, {
       method: 'POST',
@@ -302,6 +360,11 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Creates a federated user with an identity provider
+   * @param {FederatedUserRequest} user - The federated user data including identity provider name
+   * @returns {Promise<ApiResponse<User>>} The API response containing the created federated user
+   */
   static async createFederatedUser(user: FederatedUserRequest): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/federated`, {
       method: 'POST',
@@ -311,6 +374,11 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Retrieves an external user by ID
+   * @param {number} id - The unique identifier of the external user
+   * @returns {Promise<ApiResponse<User>>} The API response containing the external user details
+   */
   static async getExternalUser(id: number): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/external/${id}`, {
       method: 'GET',
@@ -319,6 +387,12 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Updates an external user's information using JSON Patch operations
+   * @param {number} id - The unique identifier of the external user to update
+   * @param {any[]} patches - Array of JSON Patch operations to apply
+   * @returns {Promise<ApiResponse<User>>} The API response containing the updated external user
+   */
   static async updateExternalUser(id: number, patches: any[]): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/external/${id}`, {
       method: 'PATCH',
@@ -328,6 +402,11 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Deletes an external user by ID
+   * @param {number} id - The unique identifier of the external user to delete
+   * @returns {Promise<ApiResponse<User>>} The API response confirming deletion
+   */
   static async deleteExternalUser(id: number): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/external/${id}`, {
       method: 'DELETE',
@@ -337,6 +416,11 @@ export class UserService {
   }
 
   // User Status Management
+  /**
+   * Changes the status of multiple users (approve or reject)
+   * @param {UserStatusChangeRequest} request - Contains user IDs and approval status
+   * @returns {Promise<ApiResponse<User>>} The API response confirming status change
+   */
   static async changeUserStatus(request: UserStatusChangeRequest): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/status`, {
       method: 'PATCH',
@@ -346,6 +430,12 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Deletes multiple users by their IDs
+   * @param {Object} filter - Filter containing array of user IDs to delete
+   * @param {number[]} filter.ids - Array of user IDs
+   * @returns {Promise<ApiResponse<User>>} The API response confirming batch deletion
+   */
   static async deleteUsersByFilter(filter: { ids: number[] }): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users`, {
       method: 'DELETE',
@@ -356,6 +446,12 @@ export class UserService {
   }
 
   // User-Account-Role Mapping
+  /**
+   * Associates accounts and roles with a user using JSON Patch operations
+   * @param {number} userId - The unique identifier of the user
+   * @param {AccountRoleMappingOperation[]} operations - Array of operations (ADD/REMOVE/REPLACE) for account-role mappings
+   * @returns {Promise<ApiResponse<{ accounts: UserAccount[] }>>} The API response containing updated account associations
+   */
   static async associateAccountAndRoles(
     userId: number, 
     operations: AccountRoleMappingOperation[]
@@ -369,6 +465,10 @@ export class UserService {
   }
 
   // Self-Service APIs
+  /**
+   * Retrieves the currently authenticated user's profile
+   * @returns {Promise<ApiResponse<User>>} The API response containing the current user's details
+   */
   static async getSelfUser(): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/self`, {
       method: 'GET',
@@ -377,6 +477,11 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Updates the currently authenticated user's information using JSON Patch operations
+   * @param {any[]} patches - Array of JSON Patch operations to apply to self
+   * @returns {Promise<ApiResponse<User>>} The API response containing the updated user details
+   */
   static async updateSelfUser(patches: any[]): Promise<ApiResponse<User>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/self`, {
       method: 'PATCH',
@@ -386,6 +491,11 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Deletes the currently authenticated user's account (self-deletion)
+   * @param {boolean} [externalUser] - Optional flag indicating if this is an external user
+   * @returns {Promise<ApiResponse<User>>} The API response confirming self-deletion
+   */
   static async deleteSelfUser(externalUser?: boolean): Promise<ApiResponse<User>> {
     let urlPath = `${API_CONFIG.API_BASE_URL}/v1/users/self`;
     if (externalUser !== undefined) {
@@ -400,6 +510,10 @@ export class UserService {
   }
 
   // User Attributes
+  /**
+   * Retrieves all available user attribute definitions
+   * @returns {Promise<ApiResponse<any[]>>} The API response containing user attribute metadata
+   */
   static async getUserAttributes(): Promise<ApiResponse<any[]>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/attributes`, {
       method: 'GET',
@@ -408,6 +522,11 @@ export class UserService {
     return response.json();
   }
 
+  /**
+   * Updates or creates user attribute definitions
+   * @param {UserMetaDataRequest[]} attributes - Array of user attribute metadata to update
+   * @returns {Promise<ApiResponse<any[]>>} The API response containing updated attribute metadata
+   */
   static async updateUserAttributes(attributes: UserMetaDataRequest[]): Promise<ApiResponse<any[]>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/attributes`, {
       method: 'PUT',
@@ -418,6 +537,12 @@ export class UserService {
   }
 
   // Utility Functions
+  /**
+   * Retrieves a user by username with optional account filtering
+   * @param {string} userName - The username to search for
+   * @param {string} [accountName] - Optional account name to filter the user
+   * @returns {Promise<ApiResponse<any>>} The API response containing the user details
+   */
   static async getUserByUserName(userName: string, accountName?: string): Promise<ApiResponse<any>> {
     let urlPath = `/v1/users/${userName}/byUserName`;
     if (accountName) {
@@ -432,6 +557,12 @@ export class UserService {
   }
 
   // User Events
+  /**
+   * Adds an event to a user's activity log
+   * @param {number} userId - The unique identifier of the user
+   * @param {any} event - The event data to log
+   * @returns {Promise<ApiResponse<string>>} The API response confirming event creation
+   */
   static async addUserEvent(userId: number, event: any): Promise<ApiResponse<string>> {
     const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/events`, {
       method: 'POST',
