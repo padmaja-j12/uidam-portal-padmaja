@@ -1,0 +1,18 @@
+name: License Compliance
+
+on:
+  push:
+    branches: [ "1.9-portal", "main" ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  license-check:
+    uses: eclipse-ecsp/.github/.github/workflows/workflow-nodejs-licence-analysis.yml@nodejs
+    with:
+      node-version: '18'
+      java-version: '17'
+      create-review: true
+    secrets:
+      token: ${{ secrets.GITLAB_API_TOKEN }}

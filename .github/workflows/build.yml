@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    branches: [ "1.9-portal", "main" ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    uses: eclipse-ecsp/.github/.github/workflows/workflow-nodejs-build.yml@nodejs
+    with:
+      node-version: '18'
+      sonar-analysis: true
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  extract-version:
+    needs: build-and-test
+    uses: eclipse-ecsp/.github/.github/workflows/workflow-nodejs-extract-version.yml@nodejs
+    with:
+      node-version: '18'
+
+  docker-push:
+    needs: [build-and-test, extract-version]
+    uses: eclipse-ecsp/.github/.github/workflows/workflow-nodejs-docker-push.yml@nodejs
+    if: false #Disable docker push on normal builds
+    with:
+      registry: "docker.io"
+      image-name: "hello-world-service"
+      image-tag: ${{ needs.extract-version.outputs.version }}
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_API_TOKEN: ${{ secrets.DOCKER_API_TOKEN }}
