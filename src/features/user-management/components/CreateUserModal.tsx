@@ -270,7 +270,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     if (!formData.userName.trim()) newErrors.userName = 'Username is required';
     
     if (!formData.password) newErrors.password = 'Password is required'; // NOSONAR (typescript:S2068) - This is form validation checking for empty input, not a hard-coded credential
-    if (!formData.confirmPassword) newErrors.confirmPassword = 'Confirm password is required';
+    if (!formData.confirmPassword) newErrors.confirmPassword = 'Confirm password is required'; // NOSONAR (typescript:S2068) - Form validation for password confirmation field, not a credential
 
     // Email validation - Using simple regex to avoid ReDoS vulnerability
     // Pattern: one or more non-whitespace/@ chars, then @, then domain with dot
