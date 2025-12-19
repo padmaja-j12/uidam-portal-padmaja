@@ -13,6 +13,8 @@ jobs:
     uses: eclipse-ecsp/.github/.github/workflows/workflow-nodejs-build.yml@nodejs
     with:
       node-version: '18'
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
 
   license-check:
     uses: eclipse-ecsp/.github/.github/workflows/workflow-nodejs-licence-analysis.yml@nodejs
@@ -27,6 +29,8 @@ jobs:
     uses: eclipse-ecsp/.github/.github/workflows/workflow-nodejs-extract-version.yml@nodejs
     with:
       node-version: '18'
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}      
       
   docker-push:
     needs: [build-and-test, license-check, extract-version]
