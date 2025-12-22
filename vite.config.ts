@@ -36,7 +36,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false, // Allow self-signed certificates
         configure: (proxy, _options) => {
-          proxy.on('error', (err, req, _res) => {
+          proxy.on('error', (err, _req, _res) => {
             console.log('OAuth2 Proxy error:', err);
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
@@ -50,7 +50,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
-          proxy.on('error', (err, req, _res) => {
+          proxy.on('error', (err, _req, _res) => {
             console.log('API Proxy error:', err);
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
@@ -64,7 +64,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
-          proxy.on('error', (err, req, _res) => {
+          proxy.on('error', (err, _req, _res) => {
             console.log('User Management API v1 Proxy error:', err);
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
@@ -78,7 +78,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
-          proxy.on('error', (err, req, _res) => {
+          proxy.on('error', (err, _req, _res) => {
             console.log('User Management API v2 Proxy error:', err);
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {

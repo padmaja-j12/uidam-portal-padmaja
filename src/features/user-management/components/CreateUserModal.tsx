@@ -337,11 +337,11 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
       logger.debug('Create user response:', response);
 
       // Check for explicit error response (for test compatibility)
-      // @ts-ignore - response can have code property
-      if (response?.code === 'ERROR' || response?.message) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((response as any)?.code === 'ERROR' || (response as any)?.message) {
         // Error returned in response body (legacy/test format)
-        logger.error('User creation failed:', response.message);
-        setApiError(response.message || 'Failed to create user');
+        logger.error('User creation failed:', (response as any).message);
+        setApiError((response as any).message || 'Failed to create user');
       } else if (response) {
         // Success case - API returned 201 with user data, or code: 'SUCCESS'
         logger.debug('User created successfully');
@@ -615,7 +615,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
           {formData.accountRoleSelections.length === 0 && !loadingAccounts && availableAccounts.length > 0 && (
             <Grid item xs={12}>
               <Alert severity="info">
-                Click "Add Account" to assign accounts and roles to this user.
+                Click &quot;Add Account&quot; to assign accounts and roles to this user.
               </Alert>
             </Grid>
           )}

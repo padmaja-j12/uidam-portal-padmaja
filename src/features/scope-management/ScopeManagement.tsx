@@ -618,7 +618,7 @@ const ScopeManagement: React.FC = () => {
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete the scope "{scopeToDelete?.name}"?
+            Are you sure you want to delete the scope &quot;{scopeToDelete?.name}&quot;?
             This action cannot be undone.
           </Typography>
         </DialogContent>

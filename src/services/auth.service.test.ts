@@ -458,12 +458,14 @@ describe('AuthService', () => {
   describe('initiateLogin - without PKCE', () => {
     beforeEach(() => {
       // Override config to disable PKCE
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { OAUTH_CONFIG } = require('@config/app.config');
       OAUTH_CONFIG.USE_PKCE = false;
     });
 
     afterEach(() => {
       // Reset PKCE back to true
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { OAUTH_CONFIG } = require('@config/app.config');
       OAUTH_CONFIG.USE_PKCE = true;
     });
@@ -935,6 +937,7 @@ describe('AuthService', () => {
 
     it('should handle refresh without client_secret', async () => {
       // Temporarily remove client secret
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { OAUTH_CONFIG } = require('@config/app.config');
       const originalSecret = OAUTH_CONFIG.CLIENT_SECRET;
       OAUTH_CONFIG.CLIENT_SECRET = undefined;
@@ -982,6 +985,7 @@ describe('AuthService', () => {
       localStorage.setItem('uidam_access_token', 'test-token');
 
       // Temporarily remove client secret
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { OAUTH_CONFIG } = require('@config/app.config');
       const originalSecret = OAUTH_CONFIG.CLIENT_SECRET;
       OAUTH_CONFIG.CLIENT_SECRET = undefined;
@@ -1185,6 +1189,7 @@ describe('AuthService', () => {
     });
 
     it('should handle PKCE disabled', () => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { OAUTH_CONFIG } = require('@config/app.config');
       OAUTH_CONFIG.USE_PKCE = false;
 

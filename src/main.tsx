@@ -35,7 +35,6 @@ const Root: React.FC = () => {
       .catch((err) => {
         setError('Failed to load configuration.');
         // Optionally log error
-        // eslint-disable-next-line no-console
         console.error('Config load error:', err);
       });
   }, []);

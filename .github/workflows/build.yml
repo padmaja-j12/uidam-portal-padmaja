@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ "1.9-portal", "main" ]
+    branches: ["1.9-portal", "main" ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -11,7 +11,7 @@ jobs:
   build-and-test:
     uses: eclipse-ecsp/.github/.github/workflows/workflow-nodejs-build.yml@nodejs
     with:
-      node-version: '18'
+      node-version: '19.5.0'
       sonar-analysis: true
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -20,7 +20,7 @@ jobs:
     needs: build-and-test
     uses: eclipse-ecsp/.github/.github/workflows/workflow-nodejs-extract-version.yml@nodejs
     with:
-      node-version: '18'
+      node-version: '19.5.0'
 
   docker-push:
     needs: [build-and-test, extract-version]
