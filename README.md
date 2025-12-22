@@ -26,7 +26,7 @@ UIDAM Portal is a React-based web application built with modern technologies inc
 
 ### Prerequisites
 
-1. Node.js version 18.0.0 or higher
+1. Node.js version 19.5.0 or higher
 2. npm version 9.0.0 or higher
 3. Access to running instances of:
    - [UIDAM User Management](https://github.com/eclipse-ecsp/uidam-user-management) service
