@@ -19,9 +19,8 @@ import { AccountService, Account, UserAccountRoleMapping, AssignUserToAccountReq
 import { AccountStatus } from '../types';
 import { userManagementApi } from './api-client';
 
-// Mock fetch
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
+// Mock apiUtils module - all exports are auto-mocked
+jest.mock('./apiUtils');
 
 // Mock userManagementApi
 jest.mock('./api-client', () => ({
@@ -33,18 +32,14 @@ jest.mock('./api-client', () => ({
   }
 }));
 
-jest.mock('./apiUtils', () => ({
-  getApiHeaders: jest.fn(() => ({
-    'Content-Type': 'application/json'
-  })),
-  handleApiResponse: jest.fn(async (response) => {
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || `HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  })
-}));
+import { fetchWithTokenRefresh, handleApiResponse } from './apiUtils';
+
+const mockFetchWithTokenRefresh = fetchWithTokenRefresh as jest.MockedFunction<typeof fetchWithTokenRefresh>;
+const mockHandleApiResponse = handleApiResponse as jest.MockedFunction<typeof handleApiResponse>;
+
+// Mock fetch
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
 
 jest.mock('../utils/logger', () => ({
   logger: {
@@ -79,10 +74,10 @@ describe('AccountService', () => {
 
   describe('createAccount', () => {
     it('should create account successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as any);
 
       const result = await AccountService.createAccount({
         accountName: 'New Account'
@@ -93,7 +88,7 @@ describe('AccountService', () => {
     });
 
     it('should handle HTTP error on create', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 400,
         statusText: 'Bad Request',
@@ -108,7 +103,7 @@ describe('AccountService', () => {
     });
 
     it('should handle network error on create', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Connection failed'));
+      mockFetchWithTokenRefresh.mockRejectedValueOnce(new Error('Connection failed'));
 
       const result = await AccountService.createAccount({
         accountName: 'Test'
@@ -118,7 +113,7 @@ describe('AccountService', () => {
     });
 
     it('should handle JSON parse error on create', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockRejectedValueOnce(new Error('Bad JSON'))
       });
@@ -133,7 +128,7 @@ describe('AccountService', () => {
 
   describe('getAccount', () => {
     it('should retrieve account', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
       });
@@ -145,7 +140,7 @@ describe('AccountService', () => {
     });
 
     it('should handle 404 on get', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 404,
         statusText: 'Not Found',
@@ -158,7 +153,7 @@ describe('AccountService', () => {
     });
 
     it('should handle network error on get', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network issue'));
+      mockFetchWithTokenRefresh.mockRejectedValueOnce(new Error('Network issue'));
 
       const result = await AccountService.getAccount('acc-001');
 
@@ -168,7 +163,7 @@ describe('AccountService', () => {
 
   describe('updateAccount', () => {
     it('should handle error on update', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 400,
         statusText: 'Bad Request',
@@ -183,7 +178,7 @@ describe('AccountService', () => {
 
   describe('deleteAccount', () => {
     it('should handle error on delete', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 403,
         statusText: 'Forbidden',
@@ -198,99 +193,99 @@ describe('AccountService', () => {
 
   describe('HTTP Methods', () => {
     it('should use POST for create', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
       });
 
       await AccountService.createAccount({ accountName: 'New' });
 
-      expect(mockFetch.mock.calls[0][1]?.method).toBe('POST');
+      expect(mockFetchWithTokenRefresh.mock.calls[0][1]?.method).toBe('POST');
     });
 
     it('should use GET for retrieve', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
       });
 
       await AccountService.getAccount('acc-001');
 
-      expect(mockFetch.mock.calls[0][1]?.method).toBe('GET');
+      expect(mockFetchWithTokenRefresh.mock.calls[0][1]?.method).toBe('GET');
     });
 
     it('should use POST for update', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
       });
 
       await AccountService.updateAccount('acc-001', {});
 
-      expect(mockFetch.mock.calls[0][1]?.method).toBe('POST');
+      expect(mockFetchWithTokenRefresh.mock.calls[0][1]?.method).toBe('POST');
     });
 
     it('should use DELETE for delete', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce({})
       });
 
       await AccountService.deleteAccount('acc-001');
 
-      expect(mockFetch.mock.calls[0][1]?.method).toBe('DELETE');
+      expect(mockFetchWithTokenRefresh.mock.calls[0][1]?.method).toBe('DELETE');
     });
   });
 
   describe('API Endpoints', () => {
     it('should call correct endpoint for create', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
       });
 
       await AccountService.createAccount({ accountName: 'New' });
 
-      expect(mockFetch.mock.calls[0][0]).toContain('/v1/accounts');
+      expect(mockFetchWithTokenRefresh.mock.calls[0][0]).toContain('/v1/accounts');
     });
 
     it('should call correct endpoint for get', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
       });
 
       await AccountService.getAccount('acc-001');
 
-      expect(mockFetch.mock.calls[0][0]).toContain('/v1/accounts/acc-001');
+      expect(mockFetchWithTokenRefresh.mock.calls[0][0]).toContain('/v1/accounts/acc-001');
     });
 
     it('should call correct endpoint for update', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
       });
 
       await AccountService.updateAccount('acc-001', {});
 
-      expect(mockFetch.mock.calls[0][0]).toContain('/v1/accounts/acc-001');
+      expect(mockFetchWithTokenRefresh.mock.calls[0][0]).toContain('/v1/accounts/acc-001');
     });
 
     it('should call correct endpoint for delete', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce({})
       });
 
       await AccountService.deleteAccount('acc-001');
 
-      expect(mockFetch.mock.calls[0][0]).toContain('/v1/accounts/acc-001');
+      expect(mockFetchWithTokenRefresh.mock.calls[0][0]).toContain('/v1/accounts/acc-001');
     });
   });
 
   describe('Error Codes', () => {
     it('should handle 400 Bad Request', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 400,
         statusText: 'Bad Request',
@@ -303,7 +298,7 @@ describe('AccountService', () => {
     });
 
     it('should handle 401 Unauthorized', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
@@ -316,7 +311,7 @@ describe('AccountService', () => {
     });
 
     it('should handle 403 Forbidden', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 403,
         statusText: 'Forbidden',
@@ -329,7 +324,7 @@ describe('AccountService', () => {
     });
 
     it('should handle 500 Server Error', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
@@ -342,7 +337,7 @@ describe('AccountService', () => {
     });
 
     it('should handle 404 Not Found', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 404,
         statusText: 'Not Found',
@@ -356,7 +351,7 @@ describe('AccountService', () => {
     });
 
     it('should handle 405 Method Not Allowed', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: false,
         status: 405,
         statusText: 'Method Not Allowed',
@@ -371,7 +366,7 @@ describe('AccountService', () => {
 
   describe('Response Handling', () => {
     it('should handle successful update with text response', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         text: jest.fn().mockResolvedValueOnce('Account updated successfully')
       });
@@ -383,7 +378,7 @@ describe('AccountService', () => {
     });
 
     it('should handle successful delete with text response', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         text: jest.fn().mockResolvedValueOnce('Account deleted successfully')
       });
@@ -396,7 +391,7 @@ describe('AccountService', () => {
 
     it('should handle error instance in catch block', async () => {
       const error = new Error('Custom error message');
-      mockFetch.mockRejectedValueOnce(error);
+      mockFetchWithTokenRefresh.mockRejectedValueOnce(error);
 
       const result = await AccountService.createAccount({ accountName: 'Test' });
 
@@ -405,7 +400,7 @@ describe('AccountService', () => {
     });
 
     it('should handle non-Error exception in catch block', async () => {
-      mockFetch.mockRejectedValueOnce('String error');
+      mockFetchWithTokenRefresh.mockRejectedValueOnce('String error');
 
       const result = await AccountService.getAccount('acc-001');
 
@@ -416,7 +411,7 @@ describe('AccountService', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty accountName in create', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce({ ...mockAccount, accountName: '' })
       });
@@ -427,7 +422,7 @@ describe('AccountService', () => {
     });
 
     it('should handle undefined optional fields in create', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
       });
@@ -443,7 +438,7 @@ describe('AccountService', () => {
     });
 
     it('should handle empty update object', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         text: jest.fn().mockResolvedValueOnce('Updated')
       });
@@ -454,7 +449,7 @@ describe('AccountService', () => {
     });
 
     it('should handle special characters in accountId', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
       });
@@ -462,7 +457,7 @@ describe('AccountService', () => {
       const result = await AccountService.getAccount('acc-001-special_chars');
 
       expect(result.success).toBe(true);
-      expect(mockFetch.mock.calls[0][0]).toContain('acc-001-special_chars');
+      expect(mockFetchWithTokenRefresh.mock.calls[0][0]).toContain('acc-001-special_chars');
     });
   });
 
@@ -609,12 +604,11 @@ describe('AccountService', () => {
 
     describe('assignUserToAccount', () => {
       it('should assign user to account successfully', async () => {
-        mockFetch.mockResolvedValueOnce({
+        const mockResponse = { ok: true } as Response;
+        mockFetchWithTokenRefresh.mockResolvedValueOnce(mockResponse);
+        mockHandleApiResponse.mockResolvedValueOnce({
           ok: true,
-          json: jest.fn().mockResolvedValueOnce({
-            ok: true,
-            data: mockMapping
-          })
+          data: mockMapping
         });
 
         const assignment: AssignUserToAccountRequest = {
@@ -629,11 +623,9 @@ describe('AccountService', () => {
       });
 
       it('should handle assignUserToAccount error', async () => {
-        mockFetch.mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          text: jest.fn().mockResolvedValueOnce('Assignment failed')
-        });
+        const mockResponse = { ok: false } as Response;
+        mockFetchWithTokenRefresh.mockResolvedValueOnce(mockResponse);
+        mockHandleApiResponse.mockRejectedValueOnce(new Error('Assignment failed'));
 
         await expect(AccountService.assignUserToAccount({
           userId: 'user-001',
@@ -645,7 +637,7 @@ describe('AccountService', () => {
 
     describe('getUserAccountMappings', () => {
       it('should get user account mappings successfully', async () => {
-        mockFetch.mockResolvedValueOnce({
+        mockFetchWithTokenRefresh.mockResolvedValueOnce({
           ok: true,
           json: jest.fn().mockResolvedValueOnce([mockMapping])
         });
@@ -657,7 +649,7 @@ describe('AccountService', () => {
       });
 
       it('should handle getUserAccountMappings error', async () => {
-        mockFetch.mockResolvedValueOnce({
+        mockFetchWithTokenRefresh.mockResolvedValueOnce({
           ok: false,
           status: 404,
           text: jest.fn().mockResolvedValueOnce('Failed')
@@ -669,7 +661,7 @@ describe('AccountService', () => {
 
     describe('getAccountUserMappings', () => {
       it('should get account user mappings successfully', async () => {
-        mockFetch.mockResolvedValueOnce({
+        mockFetchWithTokenRefresh.mockResolvedValueOnce({
           ok: true,
           json: jest.fn().mockResolvedValueOnce([mockMapping])
         });
@@ -681,7 +673,7 @@ describe('AccountService', () => {
       });
 
       it('should handle getAccountUserMappings error', async () => {
-        mockFetch.mockResolvedValueOnce({
+        mockFetchWithTokenRefresh.mockResolvedValueOnce({
           ok: false,
           status: 404,
           text: jest.fn().mockResolvedValueOnce('Failed')
@@ -693,12 +685,11 @@ describe('AccountService', () => {
 
     describe('updateUserAccountRoles', () => {
       it('should update user account roles successfully', async () => {
-        mockFetch.mockResolvedValueOnce({
+        const mockResponse = { ok: true } as Response;
+        mockFetchWithTokenRefresh.mockResolvedValueOnce(mockResponse);
+        mockHandleApiResponse.mockResolvedValueOnce({
           ok: true,
-          json: jest.fn().mockResolvedValueOnce({
-            ok: true,
-            data: mockMapping
-          })
+          data: mockMapping
         });
 
         const result = await AccountService.updateUserAccountRoles('user-001', 'acc-001', {
@@ -709,11 +700,9 @@ describe('AccountService', () => {
       });
 
       it('should handle updateUserAccountRoles error', async () => {
-        mockFetch.mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          text: jest.fn().mockResolvedValueOnce('Update failed')
-        });
+        const mockResponse = { ok: false } as Response;
+        mockFetchWithTokenRefresh.mockResolvedValueOnce(mockResponse);
+        mockHandleApiResponse.mockRejectedValueOnce(new Error('Update failed'));
 
         await expect(AccountService.updateUserAccountRoles('user-001', 'acc-001', {
           roleIds: []
@@ -723,12 +712,11 @@ describe('AccountService', () => {
 
     describe('removeUserFromAccount', () => {
       it('should remove user from account successfully', async () => {
-        mockFetch.mockResolvedValueOnce({
+        const mockResponse = { ok: true } as Response;
+        mockFetchWithTokenRefresh.mockResolvedValueOnce(mockResponse);
+        mockHandleApiResponse.mockResolvedValueOnce({
           ok: true,
-          json: jest.fn().mockResolvedValueOnce({
-            ok: true,
-            message: 'Removed successfully'
-          })
+          message: 'Removed successfully'
         });
 
         const result = await AccountService.removeUserFromAccount('user-001', 'acc-001');
@@ -737,11 +725,9 @@ describe('AccountService', () => {
       });
 
       it('should handle removeUserFromAccount error', async () => {
-        mockFetch.mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          text: jest.fn().mockResolvedValueOnce('Remove failed')
-        });
+        const mockResponse = { ok: false } as Response;
+        mockFetchWithTokenRefresh.mockResolvedValueOnce(mockResponse);
+        mockHandleApiResponse.mockRejectedValueOnce(new Error('Remove failed'));
 
         await expect(AccountService.removeUserFromAccount('user-001', 'acc-001')).rejects.toThrow();
       });
@@ -753,12 +739,11 @@ describe('AccountService', () => {
           successful: ['user-001', 'user-002'],
           failed: []
         };
-        mockFetch.mockResolvedValueOnce({
+        const mockApiResponse = { ok: true } as Response;
+        mockFetchWithTokenRefresh.mockResolvedValueOnce(mockApiResponse);
+        mockHandleApiResponse.mockResolvedValueOnce({
           ok: true,
-          json: jest.fn().mockResolvedValueOnce({
-            ok: true,
-            data: mockResponse
-          })
+          data: mockResponse
         });
 
         const assignments: AssignUserToAccountRequest[] = [
@@ -772,11 +757,9 @@ describe('AccountService', () => {
       });
 
       it('should handle bulkAssignUsersToAccount error', async () => {
-        mockFetch.mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          text: jest.fn().mockResolvedValueOnce('Bulk assignment failed')
-        });
+        const mockResponse = { ok: false } as Response;
+        mockFetchWithTokenRefresh.mockResolvedValueOnce(mockResponse);
+        mockHandleApiResponse.mockRejectedValueOnce(new Error('Bulk assignment failed'));
 
         await expect(AccountService.bulkAssignUsersToAccount('acc-001', [])).rejects.toThrow();
       });

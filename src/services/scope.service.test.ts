@@ -20,20 +20,18 @@ import { userManagementApi } from './api-client';
 import { handleApiError } from '@/utils/apiErrorHandler';
 import { Scope, CreateScopeRequest, UpdateScopeRequest } from '@/types';
 
-// Mock fetch globally for getScopes method
-global.fetch = jest.fn();
+// Mock apiUtils module - all exports are auto-mocked
+jest.mock('./apiUtils');
 
 // Mock userManagementApi for other methods
 jest.mock('./api-client');
 jest.mock('@/utils/apiErrorHandler');
 
-// Mock getApiHeaders
-jest.mock('./apiUtils', () => ({
-  getApiHeaders: jest.fn(() => ({
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer mock-token'
-  }))
-}));
+import { fetchWithTokenRefresh } from './apiUtils';
+const mockFetchWithTokenRefresh = fetchWithTokenRefresh as jest.MockedFunction<typeof fetchWithTokenRefresh>;
+
+// Mock fetch globally for getScopes method
+global.fetch = jest.fn();
 
 describe('ScopeService', () => {
   let scopeService: ScopeService;
@@ -74,10 +72,10 @@ describe('ScopeService', () => {
         results: mockScopes
       };
       
-      (global.fetch as jest.Mock).mockResolvedValue({
+      mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => mockResponse,
-      });
+      } as any);
 
       const result = await scopeService.getScopes({
         page: 0,
@@ -93,7 +91,7 @@ describe('ScopeService', () => {
     });
 
     it('should send empty array when no filter name provided', async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
+      mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: [] }),
       });
@@ -103,13 +101,13 @@ describe('ScopeService', () => {
         size: 10
       });
 
-      const callArgs = (global.fetch as jest.Mock).mock.calls[0];
+      const callArgs = mockFetchWithTokenRefresh.mock.calls[0];
       const body = JSON.parse(callArgs[1].body);
       expect(body).toEqual({ scopes: [] });
     });
 
     it('should send filter name in array when provided', async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
+      mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: [mockScope] }),
       });
@@ -120,13 +118,13 @@ describe('ScopeService', () => {
         filter: { name: 'read' }
       });
 
-      const callArgs = (global.fetch as jest.Mock).mock.calls[0];
+      const callArgs = mockFetchWithTokenRefresh.mock.calls[0];
       const body = JSON.parse(callArgs[1].body);
       expect(body).toEqual({ scopes: ['read'] });
     });
 
     it('should handle API error with handleApiError', async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
+      mockFetchWithTokenRefresh.mockResolvedValue({
         ok: false,
         status: 400,
         text: async () => 'API Error',
@@ -145,7 +143,7 @@ describe('ScopeService', () => {
         name: `scope_${i + 1}`
       }));
 
-      (global.fetch as jest.Mock).mockResolvedValue({
+      mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: scopes }),
       });
@@ -161,7 +159,7 @@ describe('ScopeService', () => {
     });
 
     it('should handle empty results', async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
+      mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: [] }),
       });
@@ -176,7 +174,7 @@ describe('ScopeService', () => {
     });
 
     it('should include pagination in API call', async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
+      mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: mockScopes }),
       });
@@ -186,7 +184,7 @@ describe('ScopeService', () => {
         size: 20
       });
 
-      const callArgs = (global.fetch as jest.Mock).mock.calls[0];
+      const callArgs = mockFetchWithTokenRefresh.mock.calls[0];
       const endpoint = callArgs[0];
       
       expect(endpoint).toContain('page=2');
@@ -199,7 +197,7 @@ describe('ScopeService', () => {
         id: `scope-${i + 1}`
       }));
 
-      (global.fetch as jest.Mock).mockResolvedValue({
+      mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: scopes }),
       });

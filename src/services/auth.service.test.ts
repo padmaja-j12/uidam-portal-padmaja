@@ -269,8 +269,8 @@ describe('AuthService', () => {
   });
 
   describe('logout', () => {
-    it('should revoke token and clear storage', async () => {
-      localStorage.setItem('uidam_access_token', 'test-token');
+    it('should call OAuth2 logout endpoint with access token and clear storage', async () => {
+      localStorage.setItem('uidam_access_token', 'test-access-token');
       localStorage.setItem('uidam_refresh_token', 'test-refresh');
 
       mockFetch.mockResolvedValueOnce({ ok: true });
@@ -278,29 +278,109 @@ describe('AuthService', () => {
       await authService.logout();
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/oauth2/revoke',
+        expect.stringContaining('http://auth.example.com/oauth2/logout?access_token='),
         expect.objectContaining({
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
         })
       );
+
+      // Verify form data contains required parameters
+      const callArgs = mockFetch.mock.calls[0];
+      const formData = callArgs[1].body as URLSearchParams;
+      
+      expect(formData.get('id_token_hint')).toBe('Bearer test-access-token');
+      expect(formData.get('client_id')).toBe('test-client');
+      expect(formData.get('post_logout_redirect_uri')).toBeTruthy();
+      expect(formData.get('state')).toBeTruthy();
+
+      // Verify storage cleared
       expect(localStorage.getItem('uidam_access_token')).toBeNull();
       expect(localStorage.getItem('uidam_refresh_token')).toBeNull();
     });
 
-    it('should clear storage even if revocation fails', async () => {
+    it('should use custom post_logout_redirect_uri when provided', async () => {
       localStorage.setItem('uidam_access_token', 'test-token');
+
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      const customUri = 'http://localhost:3000/custom-logout';
+      await authService.logout(customUri);
+
+      const callArgs = mockFetch.mock.calls[0];
+      const formData = callArgs[1].body as URLSearchParams;
+
+      expect(formData.get('post_logout_redirect_uri')).toBe(customUri);
+    });
+
+    it('should clear storage even if logout request fails', async () => {
+      localStorage.setItem('uidam_access_token', 'test-token');
+      localStorage.setItem('uidam_refresh_token', 'test-refresh');
 
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       await authService.logout();
 
+      // Storage should still be cleared
       expect(localStorage.getItem('uidam_access_token')).toBeNull();
+      expect(localStorage.getItem('uidam_refresh_token')).toBeNull();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Logout request failed:',
+        expect.any(Error)
+      );
     });
 
-    it('should not call revoke if no token exists', async () => {
+    it('should not call logout endpoint if no token exists', async () => {
       await authService.logout();
 
       expect(mockFetch).not.toHaveBeenCalled();
+      expect(localStorage.getItem('uidam_access_token')).toBeNull();
+    });
+
+    it('should clear pkce_code_verifier from sessionStorage on logout', async () => {
+      sessionStorage.setItem('pkce_code_verifier', 'test-verifier');
+      localStorage.setItem('uidam_access_token', 'test-token');
+
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await authService.logout();
+
+      expect(sessionStorage.getItem('pkce_code_verifier')).toBeNull();
+    });
+
+    it('should log logout details to console', async () => {
+      localStorage.setItem('uidam_access_token', 'test-token');
+
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await authService.logout();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Initiating OAuth2 logout:',
+        expect.objectContaining({
+          client_id: 'test-client',
+          state: expect.any(String),
+        })
+      );
+    });
+
+    it('should handle logout with 302 redirect status', async () => {
+      localStorage.setItem('uidam_access_token', 'test-token');
+
+      // Mock 302 response (redirect)
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 302,
+        headers: new Headers({
+          Location: 'http://localhost:3000/login',
+        }),
+      });
+
+      await authService.logout();
+
+      // Should still clear storage
       expect(localStorage.getItem('uidam_access_token')).toBeNull();
     });
   });
@@ -966,7 +1046,7 @@ describe('AuthService', () => {
   });
 
   describe('logout - comprehensive coverage', () => {
-    it('should include client_secret in revoke request', async () => {
+    it('should include all required OAuth2 logout parameters', async () => {
       localStorage.setItem('uidam_access_token', 'test-token');
 
       mockFetch.mockResolvedValueOnce({ ok: true });
@@ -974,21 +1054,63 @@ describe('AuthService', () => {
       await authService.logout();
 
       const callArgs = mockFetch.mock.calls[0];
+      const endpoint = callArgs[0];
       const formData = callArgs[1].body as URLSearchParams;
 
-      expect(formData.get('token')).toBe('test-token');
+      // Verify endpoint has access_token query parameter
+      expect(endpoint).toContain('access_token=test-token');
+
+      // Verify POST body parameters
+      expect(formData.get('id_token_hint')).toBe('Bearer test-token');
       expect(formData.get('client_id')).toBe('test-client');
-      expect(formData.get('client_secret')).toBe('test-secret');
+      expect(formData.get('post_logout_redirect_uri')).toBeTruthy();
+      expect(formData.get('state')).toBeTruthy();
     });
 
-    it('should not include client_secret if not configured', async () => {
+    it('should generate unique state for each logout request', async () => {
       localStorage.setItem('uidam_access_token', 'test-token');
 
-      // Temporarily remove client secret
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      mockFetch.mockResolvedValue({ ok: true });
+
+      await authService.logout();
+      const state1 = (mockFetch.mock.calls[0][1].body as URLSearchParams).get('state');
+
+      mockFetch.mockClear();
+      localStorage.setItem('uidam_access_token', 'test-token');
+
+      await authService.logout();
+      const state2 = (mockFetch.mock.calls[0][1].body as URLSearchParams).get('state');
+
+      expect(state1).not.toBe(state2);
+    });
+
+    it('should clear all token-related items from storage', async () => {
+      // Setup storage with multiple items
+      localStorage.setItem('uidam_access_token', 'test-token');
+      localStorage.setItem('uidam_refresh_token', 'test-refresh');
+      localStorage.setItem('uidam_token_expires_at', '123456789');
+      localStorage.setItem('uidam_token_scopes', 'openid profile');
+      localStorage.setItem('uidam_user_profile', JSON.stringify({ id: '1' }));
+      sessionStorage.setItem('pkce_code_verifier', 'test-verifier');
+
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await authService.logout();
+
+      expect(localStorage.getItem('uidam_access_token')).toBeNull();
+      expect(localStorage.getItem('uidam_refresh_token')).toBeNull();
+      expect(localStorage.getItem('uidam_token_expires_at')).toBeNull();
+      expect(localStorage.getItem('uidam_token_scopes')).toBeNull();
+      expect(localStorage.getItem('uidam_user_profile')).toBeNull();
+      expect(sessionStorage.getItem('pkce_code_verifier')).toBeNull();
+    });
+
+    it('should use POST_LOGOUT_REDIRECT_URI from config', async () => {
+      localStorage.setItem('uidam_access_token', 'test-token');
+
+      // Mock the config to have POST_LOGOUT_REDIRECT_URI
       const { OAUTH_CONFIG } = require('@config/app.config');
-      const originalSecret = OAUTH_CONFIG.CLIENT_SECRET;
-      OAUTH_CONFIG.CLIENT_SECRET = undefined;
+      OAUTH_CONFIG.POST_LOGOUT_REDIRECT_URI = 'http://localhost:3000/logout-success';
 
       mockFetch.mockResolvedValueOnce({ ok: true });
 
@@ -997,21 +1119,23 @@ describe('AuthService', () => {
       const callArgs = mockFetch.mock.calls[0];
       const formData = callArgs[1].body as URLSearchParams;
 
-      expect(formData.get('client_secret')).toBeNull();
-
-      // Restore client secret
-      OAUTH_CONFIG.CLIENT_SECRET = originalSecret;
+      expect(formData.get('post_logout_redirect_uri')).toBe('http://localhost:3000/logout-success');
     });
 
-    it('should clear pkce_code_verifier on logout', async () => {
-      sessionStorage.setItem('pkce_code_verifier', 'test-verifier');
-      localStorage.setItem('uidam_access_token', 'test-token');
+    it('should construct correct logout URL with encoded access token', async () => {
+      const tokenWithSpecialChars = 'test-token+/=';
+      localStorage.setItem('uidam_access_token', tokenWithSpecialChars);
 
       mockFetch.mockResolvedValueOnce({ ok: true });
 
       await authService.logout();
 
-      expect(sessionStorage.getItem('pkce_code_verifier')).toBeNull();
+      const endpoint = mockFetch.mock.calls[0][0];
+      
+      expect(endpoint).toContain('http://auth.example.com/oauth2/logout');
+      expect(endpoint).toContain('access_token=');
+      // URL encoded version should be present
+      expect(endpoint).toContain(encodeURIComponent(tokenWithSpecialChars));
     });
   });
 

@@ -19,7 +19,7 @@
 // Comprehensive API integration for UIDAM User Management APIs
 
 import { API_CONFIG } from '../config/app.config';
-import { handleApiResponse, getApiHeaders } from './apiUtils';
+import { handleApiResponse, getApiHeaders, fetchWithTokenRefresh } from './apiUtils';
 
 // API Response interfaces
 export interface ApiResponse<T> {
@@ -160,9 +160,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the created user
    */
   static async createUserV1(user: CreateUserV1Request): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users`, {
       method: 'POST',
-      headers: getApiHeaders(),
       body: JSON.stringify(user),
     });
     return response.json();
@@ -174,9 +173,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the user details
    */
   static async getUserV1(id: number): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${id}`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/${id}`, {
       method: 'GET',
-      headers: getApiHeaders(),
     });
     return response.json();
   }
@@ -188,9 +186,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the updated user
    */
   static async updateUserV1(id: number, patches: any[]): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${id}`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/${id}`, {
       method: 'PATCH',
-      headers: getApiHeaders(),
       body: JSON.stringify(patches),
     });
     return response.json();
@@ -208,9 +205,8 @@ export class UserService {
       urlPath += `?external_user=${externalUser}`;
     }
     
-    const response = await fetch(urlPath, {
+    const response = await fetchWithTokenRefresh(urlPath, {
       method: 'DELETE',
-      headers: getApiHeaders(),
     });
 
     return handleApiResponse<ApiResponse<User>>(response);
@@ -236,9 +232,8 @@ export class UserService {
     
     const finalUrl = urlParams.toString() ? `${urlPath}?${urlParams.toString()}` : urlPath;
 
-    const response = await fetch(finalUrl, {
+    const response = await fetchWithTokenRefresh(finalUrl, {
       method: 'POST',
-      headers: getApiHeaders(),
       body: JSON.stringify(filter),
     });
     return response.json();
@@ -251,9 +246,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the created user
    */
   static async createUserV2(user: CreateUserV2Request): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v2/users`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v2/users`, {
       method: 'POST',
-      headers: getApiHeaders(),
       body: JSON.stringify(user),
     });
 
@@ -266,7 +260,7 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the user with accounts
    */
   static async getUserV2(id: number): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v2/users/${id}`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v2/users/${id}`, {
       method: 'GET',
       headers: getApiHeaders(),
     });
@@ -280,9 +274,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the updated user
    */
   static async updateUserV2(id: number, patches: any[]): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v2/users/${id}`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v2/users/${id}`, {
       method: 'PATCH',
-      headers: getApiHeaders(),
       body: JSON.stringify(patches),
     });
 
@@ -312,9 +305,8 @@ export class UserService {
     
     const finalUrl = urlParams.toString() ? `${urlPath}?${urlParams.toString()}` : urlPath;
 
-    const response = await fetch(finalUrl, {
+    const response = await fetchWithTokenRefresh(finalUrl, {
       method: 'POST',
-      headers: getApiHeaders(),
       body: JSON.stringify(filter),
     });
     
@@ -352,9 +344,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the created external user
    */
   static async createExternalUser(user: ExternalUserRequest): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/external`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/external`, {
       method: 'POST',
-      headers: getApiHeaders(),
       body: JSON.stringify(user),
     });
     return response.json();
@@ -366,9 +357,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the created federated user
    */
   static async createFederatedUser(user: FederatedUserRequest): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/federated`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/federated`, {
       method: 'POST',
-      headers: getApiHeaders(),
       body: JSON.stringify(user),
     });
     return response.json();
@@ -380,9 +370,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the external user details
    */
   static async getExternalUser(id: number): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/external/${id}`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/external/${id}`, {
       method: 'GET',
-      headers: getApiHeaders(),
     });
     return response.json();
   }
@@ -394,9 +383,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<User>>} The API response containing the updated external user
    */
   static async updateExternalUser(id: number, patches: any[]): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/external/${id}`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/external/${id}`, {
       method: 'PATCH',
-      headers: getApiHeaders(),
       body: JSON.stringify(patches),
     });
     return response.json();
@@ -516,7 +504,7 @@ export class UserService {
       console.warn('Could not extract user_id from token');
     }
 
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/self`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/self`, {
       method: 'GET',
       headers: headers,
     });
@@ -567,7 +555,7 @@ export class UserService {
       headers['user-id'] = userId;
     }
 
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/self`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/self`, {
       method: 'PATCH',
       headers: headers,
       body: JSON.stringify(patches),
@@ -586,9 +574,8 @@ export class UserService {
       urlPath += `?external_user=${externalUser}`;
     }
     
-    const response = await fetch(urlPath, {
+    const response = await fetchWithTokenRefresh(urlPath, {
       method: 'DELETE',
-      headers: getApiHeaders(),
     });
     return response.json();
   }
@@ -599,9 +586,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<any[]>>} The API response containing user attribute metadata
    */
   static async getUserAttributes(): Promise<ApiResponse<any[]>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/attributes`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/attributes`, {
       method: 'GET',
-      headers: getApiHeaders(),
     });
     return response.json();
   }
@@ -612,9 +598,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<any[]>>} The API response containing updated attribute metadata
    */
   static async updateUserAttributes(attributes: UserMetaDataRequest[]): Promise<ApiResponse<any[]>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/attributes`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/attributes`, {
       method: 'PUT',
-      headers: getApiHeaders(),
       body: JSON.stringify(attributes),
     });
     return response.json();
@@ -628,14 +613,13 @@ export class UserService {
    * @returns {Promise<ApiResponse<any>>} The API response containing the user details
    */
   static async getUserByUserName(userName: string, accountName?: string): Promise<ApiResponse<any>> {
-    let urlPath = `/v1/users/${userName}/byUserName`;
+    let urlPath = `${API_CONFIG.API_BASE_URL}/v1/users/${userName}/byUserName`;
     if (accountName) {
       urlPath += `?accountName=${accountName}`;
     }
     
-    const response = await fetch(urlPath, {
+    const response = await fetchWithTokenRefresh(urlPath, {
       method: 'GET',
-      headers: getApiHeaders(),
     });
     return response.json();
   }
@@ -648,9 +632,8 @@ export class UserService {
    * @returns {Promise<ApiResponse<string>>} The API response confirming event creation
    */
   static async addUserEvent(userId: number, event: any): Promise<ApiResponse<string>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/events`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/events`, {
       method: 'POST',
-      headers: getApiHeaders(),
       body: JSON.stringify(event),
     });
     return response.json();

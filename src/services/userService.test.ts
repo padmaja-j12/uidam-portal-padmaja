@@ -30,10 +30,41 @@ import {
 } from './userService';
 import { API_CONFIG } from '@/config/app.config';
 
+// Mock the tokenManager module
+jest.mock('@/utils/tokenManager', () => ({
+  handleTokenRefresh: jest.fn().mockResolvedValue('mock-refreshed-token'),
+  shouldRefreshToken: jest.fn().mockReturnValue(false),
+  getValidToken: jest.fn().mockResolvedValue('mock-valid-token'),
+}));
+
 // Mock fetch globally
 global.fetch = jest.fn();
 
+// Mock localStorage
+const mockLocalStorage = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+    removeItem: (key: string) => { delete store[key]; },
+    clear: () => { store = {}; },
+  };
+})();
+
+Object.defineProperty(window, 'localStorage', { value: mockLocalStorage });
+
 describe('UserService', () => {
+  beforeEach(() => {
+    // Setup mock token in localStorage
+    mockLocalStorage.setItem('uidam_admin_token', 'mock-token');
+    mockLocalStorage.setItem('uidam_token_expires_at', String(Date.now() + 3600000)); // 1 hour from now
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    mockLocalStorage.clear();
+  });
+
   const mockUser: User = {
     id: 1,
     userName: 'testuser',
@@ -760,7 +791,7 @@ describe('UserService', () => {
         await UserService.deleteSelfUser();
 
         expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining('/v1/users/self'),
+          expect.stringContaining('/v2/users/self'),
           expect.objectContaining({
             method: 'DELETE'
           })

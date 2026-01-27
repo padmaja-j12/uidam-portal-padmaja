@@ -131,9 +131,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       try {
         const response = await UserService.getSelfUser();
         if (response.data) {
-          dispatch(updateUser(response.data));
-        } else if ('id' in response) {
-          dispatch(updateUser(response as unknown as any));
+          // Map User to AuthUser format
+          const userData = response.data;
+          dispatch(updateUser({
+            id: String(userData.id),
+            userName: userData.userName,
+            email: userData.email || '',
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            roles: userData.roles || [],
+            scopes: [], // User service doesn't return scopes, will be populated from token
+            accounts: userData.accounts?.map(a => a.account) || []
+          }));
+        } else if ('id' in response && typeof response.id === 'number') {
+          const userData = response as { id: number; userName: string; email: string; firstName: string; lastName: string; roles?: string[]; accounts?: Array<{ account: string }> };
+          dispatch(updateUser({
+            id: String(userData.id),
+            userName: userData.userName,
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            roles: userData.roles || [],
+            scopes: [],
+            accounts: userData.accounts?.map(a => a.account) || []
+          }));
         }
       } catch (error) {
         console.error('Failed to fetch user profile in Layout:', error);

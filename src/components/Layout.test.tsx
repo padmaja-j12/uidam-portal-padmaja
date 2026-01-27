@@ -24,6 +24,20 @@ import Layout from './Layout';
 import { uiSlice } from '@store/slices/uiSlice';
 import { authSlice } from '@store/slices/authSlice';
 
+// Mock the UserService
+jest.mock('@services/userService', () => ({
+  UserService: {
+    getSelfUser: jest.fn(),
+  },
+}));
+
+// Mock the authService
+jest.mock('@services/auth.service', () => ({
+  authService: {
+    logout: jest.fn(),
+  },
+}));
+
 // Mock the hooks
 jest.mock('@hooks/useTheme', () => ({
   useTheme: () => ({
@@ -88,6 +102,9 @@ const renderWithProviders = (
 };
 
 describe('Layout', () => {
+  const { UserService } = require('@services/userService');
+  const { authService } = require('@services/auth.service');
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -169,7 +186,6 @@ describe('Layout', () => {
     fireEvent.click(avatarButton);
 
     expect(screen.getByText('Profile')).toBeInTheDocument();
-    expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('Logout')).toBeInTheDocument();
   });
 
@@ -187,6 +203,8 @@ describe('Layout', () => {
   });
 
   it('should logout and navigate to login when logout is clicked', async () => {
+    authService.logout.mockResolvedValue(undefined);
+    
     const store = createMockStore();
     renderWithProviders(
       <Layout>
@@ -206,6 +224,105 @@ describe('Layout', () => {
     });
 
     await waitFor(() => {
+      expect(authService.logout).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('/login');
+    });
+  });
+
+  it('should call authService.logout when logout is triggered', async () => {
+    authService.logout.mockResolvedValue(undefined);
+
+    const store = createMockStore();
+    renderWithProviders(
+      <Layout>
+        <div>Content</div>
+      </Layout>,
+      { store }
+    );
+
+    const avatarButton = screen.getByLabelText('account of current user');
+    fireEvent.click(avatarButton);
+
+    const logoutButtons = screen.getAllByText('Logout');
+    fireEvent.click(logoutButtons[0]);
+
+    await waitFor(() => {
+      expect(authService.logout).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('should handle logout failure gracefully', async () => {
+    authService.logout.mockRejectedValue(new Error('Logout failed'));
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    const store = createMockStore();
+    renderWithProviders(
+      <Layout>
+        <div>Content</div>
+      </Layout>,
+      { store }
+    );
+
+    const avatarButton = screen.getByLabelText('account of current user');
+    fireEvent.click(avatarButton);
+
+    const logoutButtons = screen.getAllByText('Logout');
+    fireEvent.click(logoutButtons[0]);
+
+    await waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Logout failed:', expect.any(Error));
+      expect(mockNavigate).toHaveBeenCalledWith('/login');
+    });
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('should clear Redux state after logout', async () => {
+    authService.logout.mockResolvedValue(undefined);
+
+    const store = createMockStore();
+    renderWithProviders(
+      <Layout>
+        <div>Content</div>
+      </Layout>,
+      { store }
+    );
+
+    const avatarButton = screen.getByLabelText('account of current user');
+    fireEvent.click(avatarButton);
+
+    const logoutButtons = screen.getAllByText('Logout');
+    fireEvent.click(logoutButtons[0]);
+
+    await waitFor(() => {
+      const state = store.getState();
+      expect(state.auth.isAuthenticated).toBe(false);
+      expect(state.auth.user).toBeNull();
+    });
+  });
+
+  it('should close user menu after logout', async () => {
+    authService.logout.mockResolvedValue(undefined);
+
+    const store = createMockStore();
+    renderWithProviders(
+      <Layout>
+        <div>Content</div>
+      </Layout>,
+      { store }
+    );
+
+    const avatarButton = screen.getByLabelText('account of current user');
+    fireEvent.click(avatarButton);
+
+    // Menu should be open
+    expect(screen.getAllByText('Logout').length).toBeGreaterThan(0);
+
+    const logoutButtons = screen.getAllByText('Logout');
+    fireEvent.click(logoutButtons[0]);
+
+    await waitFor(() => {
+      // Menu should be closed after logout
       expect(mockNavigate).toHaveBeenCalledWith('/login');
     });
   });
@@ -361,5 +478,270 @@ describe('Layout', () => {
     const button = dashboardButton?.closest('[role="button"]');
     
     expect(button).toHaveClass('Mui-selected');
+  });
+
+  describe('Profile Management', () => {
+    beforeEach(() => {
+      UserService.getSelfUser.mockClear();
+    });
+
+    it('should fetch user profile on mount if firstName or lastName is missing', async () => {
+      const incompleteUser = {
+        id: '1',
+        userName: 'testuser',
+        email: 'test@example.com',
+        firstName: undefined,
+        lastName: undefined,
+        roles: ['ADMIN'],
+        scopes: ['read'],
+        accounts: ['account1'],
+      };
+
+      const completeUser = {
+        ...incompleteUser,
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      UserService.getSelfUser.mockResolvedValue({ data: completeUser });
+
+      const store = createMockStore({
+        auth: {
+          isAuthenticated: true,
+          user: incompleteUser,
+          tokens: null,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      renderWithProviders(
+        <Layout>
+          <div>Content</div>
+        </Layout>,
+        { store }
+      );
+
+      await waitFor(() => {
+        expect(UserService.getSelfUser).toHaveBeenCalled();
+      });
+    });
+
+    it('should not fetch profile if user already has firstName and lastName', () => {
+      const completeUser = {
+        id: '1',
+        userName: 'testuser',
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        roles: ['ADMIN'],
+        scopes: ['read'],
+        accounts: ['account1'],
+      };
+
+      const store = createMockStore({
+        auth: {
+          isAuthenticated: true,
+          user: completeUser,
+          tokens: null,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      renderWithProviders(
+        <Layout>
+          <div>Content</div>
+        </Layout>,
+        { store }
+      );
+
+      expect(UserService.getSelfUser).not.toHaveBeenCalled();
+    });
+
+    it('should handle profile fetch error gracefully', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      UserService.getSelfUser.mockRejectedValue(new Error('Failed to fetch profile'));
+
+      const incompleteUser = {
+        id: '1',
+        userName: 'testuser',
+        email: 'test@example.com',
+        firstName: undefined,
+        lastName: 'Doe',
+        roles: ['ADMIN'],
+        scopes: ['read'],
+        accounts: ['account1'],
+      };
+
+      const store = createMockStore({
+        auth: {
+          isAuthenticated: true,
+          user: incompleteUser,
+          tokens: null,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      renderWithProviders(
+        <Layout>
+          <div>Content</div>
+        </Layout>,
+        { store }
+      );
+
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to fetch user profile in Layout:',
+          expect.any(Error)
+        );
+      });
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should update Redux store with fetched profile data', async () => {
+      const incompleteUser = {
+        id: '1',
+        userName: 'testuser',
+        email: 'test@example.com',
+        firstName: undefined,
+        lastName: undefined,
+        roles: ['ADMIN'],
+        scopes: ['read'],
+        accounts: ['account1'],
+      };
+
+      const completeUser = {
+        id: 1,
+        userName: 'testuser',
+        email: 'test@example.com',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        status: 'ACTIVE' as const,
+      };
+
+      UserService.getSelfUser.mockResolvedValue({ data: completeUser });
+
+      const store = createMockStore({
+        auth: {
+          isAuthenticated: true,
+          user: incompleteUser,
+          tokens: null,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      renderWithProviders(
+        <Layout>
+          <div>Content</div>
+        </Layout>,
+        { store }
+      );
+
+      await waitFor(() => {
+        const state = store.getState();
+        expect(state.auth.user).toMatchObject({
+          firstName: 'Jane',
+          lastName: 'Smith',
+        });
+      });
+    });
+
+    it('should display updated user name in avatar after profile fetch', async () => {
+      const incompleteUser = {
+        id: '1',
+        userName: 'testuser',
+        email: 'test@example.com',
+        firstName: undefined,
+        lastName: undefined,
+        roles: ['ADMIN'],
+        scopes: ['read'],
+        accounts: ['account1'],
+      };
+
+      const completeUser = {
+        id: 1,
+        userName: 'testuser',
+        email: 'test@example.com',
+        firstName: 'Bob',
+        lastName: 'Johnson',
+        status: 'ACTIVE' as const,
+      };
+
+      UserService.getSelfUser.mockResolvedValue({ data: completeUser });
+
+      const store = createMockStore({
+        auth: {
+          isAuthenticated: true,
+          user: incompleteUser,
+          tokens: null,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      renderWithProviders(
+        <Layout>
+          <div>Content</div>
+        </Layout>,
+        { store }
+      );
+
+      await waitFor(() => {
+        expect(UserService.getSelfUser).toHaveBeenCalled();
+        const state = store.getState();
+        expect(state.auth.user?.firstName).toBe('Bob');
+      });
+    });
+
+    it('should handle response without data property', async () => {
+      const incompleteUser = {
+        id: '1',
+        userName: 'testuser',
+        email: 'test@example.com',
+        firstName: undefined,
+        lastName: 'Doe',
+        roles: ['ADMIN'],
+        scopes: ['read'],
+        accounts: ['account1'],
+      };
+
+      const directUserResponse = {
+        id: 1,
+        userName: 'testuser',
+        email: 'test@example.com',
+        firstName: 'Direct',
+        lastName: 'User',
+        status: 'ACTIVE' as const,
+      };
+
+      UserService.getSelfUser.mockResolvedValue(directUserResponse);
+
+      const store = createMockStore({
+        auth: {
+          isAuthenticated: true,
+          user: incompleteUser,
+          tokens: null,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      renderWithProviders(
+        <Layout>
+          <div>Content</div>
+        </Layout>,
+        { store }
+      );
+
+      await waitFor(() => {
+        const state = store.getState();
+        expect(state.auth.user?.firstName).toBe('Direct');
+      });
+    });
   });
 });

@@ -21,7 +21,7 @@
 import { AccountStatus } from '../types';
 import { API_CONFIG } from '../config/app.config';
 import { userManagementApi } from './api-client';
-import { handleApiResponse, getApiHeaders } from './apiUtils';
+import { handleApiResponse, fetchWithTokenRefresh } from './apiUtils';
 import { logger } from '../utils/logger';
 
 // API Response interfaces-
@@ -135,9 +135,8 @@ export class AccountService {
    */
   static async createAccount(account: CreateAccountRequest): Promise<{ success: boolean; data?: Account; error?: string }> {
     try {
-      const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts`, {
+      const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/accounts`, {
         method: 'POST',
-        headers: getApiHeaders(),
         body: JSON.stringify(account),
       });
 
@@ -172,9 +171,8 @@ export class AccountService {
    */
   static async getAccount(accountId: string): Promise<{ success: boolean; data?: Account; error?: string }> {
     try {
-      const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}`, {
+      const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}`, {
         method: 'GET',
-        headers: getApiHeaders(),
       });
 
       if (!response.ok) {
@@ -209,9 +207,8 @@ export class AccountService {
    */
   static async updateAccount(accountId: string, accountData: UpdateAccountRequest): Promise<{ success: boolean; data?: string; error?: string }> {
     try {
-      const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}`, {
+      const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}`, {
         method: 'POST',
-        headers: getApiHeaders(),
         body: JSON.stringify(accountData),
       });
 
@@ -247,9 +244,8 @@ export class AccountService {
    */
   static async deleteAccount(accountId: string): Promise<{ success: boolean; data?: string; error?: string }> {
     try {
-      const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}`, {
+      const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}`, {
         method: 'DELETE',
-        headers: getApiHeaders(),
       });
 
       if (!response.ok) {
@@ -431,9 +427,8 @@ export class AccountService {
    * @returns {Promise<ApiResponse<UserAccountRoleMapping>>} The API response containing the created mapping
    */
   static async assignUserToAccount(assignment: AssignUserToAccountRequest): Promise<ApiResponse<UserAccountRoleMapping>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/user-account-mappings`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/user-account-mappings`, {
       method: 'POST',
-      headers: getApiHeaders(),
       body: JSON.stringify(assignment),
     });
 
@@ -447,9 +442,8 @@ export class AccountService {
    * @throws {Error} If the API request fails
    */
   static async getUserAccountMappings(userId: string): Promise<UserAccountRoleMapping[]> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/account-mappings`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/account-mappings`, {
       method: 'GET',
-      headers: getApiHeaders(),
     });
 
     if (!response.ok) {
@@ -469,9 +463,8 @@ export class AccountService {
    * @throws {Error} If the API request fails
    */
   static async getAccountUserMappings(accountId: string): Promise<UserAccountRoleMapping[]> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}/user-mappings`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}/user-mappings`, {
       method: 'GET',
-      headers: getApiHeaders(),
     });
 
     if (!response.ok) {
@@ -496,9 +489,8 @@ export class AccountService {
     accountId: string, 
     roleData: UpdateUserAccountRolesRequest
   ): Promise<ApiResponse<UserAccountRoleMapping>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/accounts/${accountId}/roles`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/accounts/${accountId}/roles`, {
       method: 'PATCH',
-      headers: getApiHeaders(),
       body: JSON.stringify(roleData),
     });
 
@@ -512,9 +504,8 @@ export class AccountService {
    * @returns {Promise<ApiResponse<string>>} The API response confirming removal
    */
   static async removeUserFromAccount(userId: string, accountId: string): Promise<ApiResponse<string>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/accounts/${accountId}`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/accounts/${accountId}`, {
       method: 'DELETE',
-      headers: getApiHeaders(),
     });
 
     return handleApiResponse<ApiResponse<string>>(response);
@@ -530,9 +521,8 @@ export class AccountService {
     accountId: string, 
     assignments: AssignUserToAccountRequest[]
   ): Promise<ApiResponse<UserAccountRoleMapping[]>> {
-    const response = await fetch(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}/bulk-assign-users`, {
+    const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/accounts/${accountId}/bulk-assign-users`, {
       method: 'POST',
-      headers: getApiHeaders(),
       body: JSON.stringify(assignments),
     });
 

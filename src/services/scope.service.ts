@@ -25,7 +25,7 @@ import {
 } from '@/types';
 import { API_CONFIG } from '@/config/app.config';
 import { createResource, updateResource, deleteResource, getResource, buildQueryParams } from '@/utils/serviceHelpers';
-import { getApiHeaders } from './apiUtils';
+import { fetchWithTokenRefresh } from './apiUtils';
 
 /**
  * Service class for managing scope operations
@@ -56,10 +56,9 @@ export class ScopeService {
     console.log('Scope Service - Getting scopes:', { url: finalUrl, filterRequest, correlationId });
     
     try {
-      const response = await fetch(finalUrl, {
+      const response = await fetchWithTokenRefresh(finalUrl, {
         method: 'POST',
         headers: {
-          ...getApiHeaders(),
           'X-Correlation-ID': correlationId,
         },
         body: JSON.stringify(filterRequest),

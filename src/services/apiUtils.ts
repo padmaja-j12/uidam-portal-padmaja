@@ -15,6 +15,8 @@
 *
 * <p>SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
+import { handleTokenRefresh, shouldRefreshToken } from '../utils/tokenManager';
+
 /**
  * Shared utilities for API services
  * Provides common functionality for handling API requests and responses
@@ -151,4 +153,61 @@ export async function makeFetchRequest<T>(
       error: err instanceof Error ? err.message : `Failed to ${context}`
     };
   }
+}
+
+/**
+ * Fetch wrapper with automatic token refresh
+ * Automatically refreshes expired tokens before making requests
+ * Retries requests with new token if 401 response is received
+ * @param url - The URL to fetch
+ * @param options - Fetch options
+ * @returns Promise with Response object
+ */
+export async function fetchWithTokenRefresh(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  // Check if token needs refresh before making the request
+  if (shouldRefreshToken()) {
+    console.log('Token expired, refreshing before request...');
+    const newToken = await handleTokenRefresh();
+    if (!newToken) {
+      throw new Error('Authentication required - token refresh failed');
+    }
+  }
+
+  // Merge headers with authorization
+  const headers = {
+    ...getApiHeaders(),
+    ...options.headers,
+  };
+
+  // Make the initial request
+  let response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  // If 401, try refreshing token once and retry
+  if (response.status === 401) {
+    console.log('Received 401, attempting token refresh...');
+    const newToken = await handleTokenRefresh();
+    
+    if (newToken) {
+      // Retry request with new token
+      const retryHeaders = {
+        ...getApiHeaders(),
+        ...options.headers,
+      };
+      
+      response = await fetch(url, {
+        ...options,
+        headers: retryHeaders,
+      });
+    } else {
+      throw new Error('Authentication failed - please log in again');
+    }
+  }
+
+  return response;
 }

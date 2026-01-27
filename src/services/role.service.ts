@@ -26,7 +26,7 @@ import {
 import { API_CONFIG } from '@/config/app.config';
 import { userManagementApi } from './api-client';
 import { createResource, updateResource, deleteResource, getResource, buildQueryParams } from '@/utils/serviceHelpers';
-import { getApiHeaders } from './apiUtils';
+import { fetchWithTokenRefresh } from './apiUtils';
 
 /**
  * Service class for managing role operations
@@ -57,10 +57,9 @@ export class RoleService {
     console.log('Role Service - Getting roles:', { url: finalUrl, filterRequest, correlationId });
 
     try {
-      const response = await fetch(finalUrl, {
+      const response = await fetchWithTokenRefresh(finalUrl, {
         method: 'POST',
         headers: {
-          ...getApiHeaders(),
           'X-Correlation-ID': correlationId,
         },
         body: JSON.stringify(filterRequest),

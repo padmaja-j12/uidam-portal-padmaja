@@ -50,7 +50,6 @@ import {
   Notifications as NotificationsIcon,
   Security as SecurityIcon,
   Edit as EditIcon,
-  Devices as DevicesIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
 } from '@mui/icons-material';
@@ -72,14 +71,22 @@ const Profile: React.FC = () => {
         setError(null);
         
         const response = await UserService.getSelfUser();
+        console.log('Profile - getSelfUser response:', response);
         
         // Check if response has data field (wrapped) or is the user object directly
         if (response.data) {
+          console.log('Profile - Setting user from response.data');
           setUser(response.data);
-        } else if ((response as any).id) {
+        } else if ('id' in response && typeof response.id === 'number') {
           // Response is the user object directly
+          console.log('Profile - Setting user from response directly (has id)');
+          setUser(response as unknown as User);
+        } else if ('userName' in response) {
+          // Response has userName but might not have id yet
+          console.log('Profile - Setting user from response directly (has userName)');
           setUser(response as unknown as User);
         } else {
+          console.error('Profile - Unexpected response structure:', response);
           setError(response.message || 'Failed to load profile');
         }
       } catch (err) {
@@ -151,7 +158,7 @@ const Profile: React.FC = () => {
       interface JsonPatch {
         op: string;
         path: string;
-        value: string | boolean | number | undefined;
+        value: string | boolean | number | string[] | Record<string, unknown> | UserAccount[] | undefined;
       }
       const patches: JsonPatch[] = [];
       const editableFields: (keyof User)[] = [
@@ -166,7 +173,7 @@ const Profile: React.FC = () => {
           patches.push({
             op: 'replace',
             path: `/${field}`,
-            value: editedUser[field]
+            value: editedUser[field] as string | boolean | number | string[] | Record<string, unknown> | UserAccount[] | undefined
           });
         }
       });
@@ -179,9 +186,17 @@ const Profile: React.FC = () => {
       console.log('Sending patches:', patches);
       const response = await UserService.updateSelfUser(patches);
 
-      if ((response as any).id || response.data) {
-        const updatedUser = response.data || (response as unknown as User);
-        setUser(updatedUser as User);
+      if ('id' in response && typeof response.id === 'number') {
+        // Response is the user object directly
+        setUser(response as unknown as User);
+        setSuccessMessage('Profile updated successfully!');
+        setEditMode(false);
+        setEditedUser({});
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else if (response.data) {
+        setUser(response.data);
         setSuccessMessage('Profile updated successfully!');
         setEditMode(false);
         setEditedUser({});
