@@ -334,12 +334,32 @@ export class AccountService {
       // Handle the actual API response format: { "items": [...] }
       const accounts = response.items || [];
       
+      // Get total count for pagination
+      let totalCount = accounts.length;
+      
+      // If we got a full page of results, there might be more - fetch total count
+      if (params && params.pageSize && accounts.length === params.pageSize) {
+        try {
+          const totalEndpoint = '/v1/accounts/filter?pageNumber=0&pageSize=10000';
+          const totalResponse: { items?: Account[] } = await userManagementApi.post(totalEndpoint, filter);
+          totalCount = (totalResponse.items || []).length;
+          logger.debug('Account total count fetched:', totalCount);
+        } catch (error) {
+          logger.warn('Failed to get total count, using estimate:', error);
+          // If total count fetch fails, estimate based on current page
+          totalCount = (params.pageNumber || 0) * params.pageSize + accounts.length;
+        }
+      } else if (params && params.pageSize && params.pageNumber) {
+        // Current page has fewer results than requested, so we know the total
+        totalCount = params.pageNumber * params.pageSize + accounts.length;
+      }
+      
       // Return the data in a consistent format
       return {
         success: true,
         data: {
           content: Array.isArray(accounts) ? accounts : [],
-          totalElements: Array.isArray(accounts) ? accounts.length : 0
+          totalElements: totalCount
         }
       };
     } catch (err: unknown) {

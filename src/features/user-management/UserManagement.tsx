@@ -54,7 +54,7 @@ import {
 } from '@mui/icons-material';
 import ManagementLayout from '../../components/shared/ManagementLayout';
 import { StyledTableHead, StyledTableCell, StyledTableRow } from '../../components/shared/StyledTableComponents';
-import { User, UserService, UsersFilterV2, UserSearchParams } from '../../services/userService';
+import { User, UserService, UsersFilterV1, UserSearchParams } from '../../services/userService';
 import CreateUserModal from './components/CreateUserModal';
 import EditUserModal from './components/EditUserModal';
 import UserDetailsModal from './components/UserDetailsModal';
@@ -67,7 +67,7 @@ const UserManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [totalUsers, setTotalUsers] = useState(0);
   const [snackbar, setSnackbar] = useState({ 
     open: false, 
@@ -93,7 +93,7 @@ const UserManagement: React.FC = () => {
     
     try {
       // Build filter object
-      const filter: UsersFilterV2 = {};
+      const filter: UsersFilterV1 = {};
       
       // Add search filter if search term exists
       if (searchTerm?.trim()) {
@@ -112,15 +112,54 @@ const UserManagement: React.FC = () => {
 
       try {
         // Call the real API
-        const users = await UserService.filterUsersV2(filter, searchParams);
+        const response = await UserService.filterUsersV1(filter, searchParams);
+        console.log('API Response:', response);
         
-        if (Array.isArray(users)) {
-          setUsers(users);
-          setTotalUsers(users.length);
-        } else {
-          console.warn('Unexpected response format:', users);
-          throw new Error('Invalid response format');
+        // Handle different response formats
+        let usersList: User[] = [];
+        
+        if (Array.isArray(response)) {
+          // Direct array response
+          usersList = response;
+        } else if (response.data && Array.isArray(response.data)) {
+          // Wrapped in data property
+          usersList = response.data;
+        } else if (response && typeof response === 'object') {
+          // Check if response itself is the user object or has other properties
+          usersList = [];
         }
+        
+        setUsers(usersList);
+        
+        // For V1 API without total count, fetch total separately with large pageSize
+        // or use a separate API call. For now, we'll request a large pageSize to get approximate total
+        if (usersList.length === rowsPerPage) {
+          // Likely there are more records, make a call without pagination to get total
+          try {
+            const totalResponse = await UserService.filterUsersV1(filter, {
+              ...searchParams,
+              pageNumber: 0,
+              pageSize: 10000 // Large number to get all records for count
+            });
+            
+            let totalList: User[] = [];
+            if (Array.isArray(totalResponse)) {
+              totalList = totalResponse;
+            } else if (totalResponse.data && Array.isArray(totalResponse.data)) {
+              totalList = totalResponse.data;
+            }
+            
+            setTotalUsers(totalList.length);
+          } catch (error) {
+            console.error('Failed to get total count:', error);
+            setTotalUsers(usersList.length);
+          }
+        } else {
+          // Current page has fewer records than pageSize, so this is likely the last/only page
+          setTotalUsers(page * rowsPerPage + usersList.length);
+        }
+        
+        console.log('Users loaded:', usersList.length);
       } catch (apiError) {
         console.error('API call failed:', apiError);
         setSnackbar({ 
@@ -429,7 +468,7 @@ const UserManagement: React.FC = () => {
 
         {/* Pagination */}
         <TablePagination
-          rowsPerPageOptions={[10, 25, 50, 100]}
+          rowsPerPageOptions={[5, 10, 25, 50, 100]}
           component="div"
           count={totalUsers}
           rowsPerPage={rowsPerPage}

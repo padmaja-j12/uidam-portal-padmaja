@@ -75,7 +75,7 @@ const ScopeManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
@@ -517,7 +517,7 @@ const ScopeManagement: React.FC = () => {
           </TableContainer>
 
           <TablePagination
-            rowsPerPageOptions={[10, 25, 50, 100]}
+            rowsPerPageOptions={[5, 10, 25, 50, 100]}
             component="div"
             count={totalCount}
             rowsPerPage={rowsPerPage}

@@ -75,14 +75,43 @@ export class ScopeService {
       
       console.log('Scope Service - Success:', { resultsCount: results.length, correlationId });
       
+      // Get total count for pagination
+      let totalCount = results.length;
+      
+      // If we got a full page of results, there might be more - fetch total count
+      if (results.length === params.size) {
+        try {
+          const totalResponse = await fetchWithTokenRefresh(`${urlPath}?page=0&pageSize=10000`, {
+            method: 'POST',
+            headers: {
+              'X-Correlation-ID': crypto.randomUUID(),
+            },
+            body: JSON.stringify(filterRequest),
+          });
+          
+          if (totalResponse.ok) {
+            const totalData: { results?: Scope[] } = await totalResponse.json();
+            totalCount = (totalData.results || []).length;
+            console.log('Scope Service - Total count fetched:', totalCount);
+          }
+        } catch (error) {
+          console.warn('Scope Service - Failed to get total count, using current results:', error);
+          // If total count fetch fails, estimate based on current page
+          totalCount = params.page * params.size + results.length;
+        }
+      } else {
+        // Current page has fewer results than requested, so we know the total
+        totalCount = params.page * params.size + results.length;
+      }
+      
       return {
         content: results,
-        totalElements: results.length,
-        totalPages: Math.ceil(results.length / params.size),
+        totalElements: totalCount,
+        totalPages: Math.ceil(totalCount / params.size),
         size: params.size,
         number: params.page,
         first: params.page === 0,
-        last: params.page >= Math.ceil(results.length / params.size) - 1,
+        last: params.page >= Math.ceil(totalCount / params.size) - 1,
       };
     } catch (error: unknown) {
       console.error('Scope Service - Error details:', { error, correlationId });

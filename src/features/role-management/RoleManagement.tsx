@@ -27,6 +27,7 @@ import {
   TableContainer,
   TableRow,
   Paper,
+  TablePagination,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -81,6 +82,11 @@ const RoleManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
+  // Pagination
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [totalCount, setTotalCount] = useState(0);
+  
   // Form state
   const [formData, setFormData] = useState<CreateRoleRequest>({
     name: '',
@@ -101,12 +107,13 @@ const RoleManagement: React.FC = () => {
       
       const filter = searchTerm ? { name: searchTerm } : undefined;
       const response = await roleService.getRoles({
-        page: 0,
-        size: 100,
+        page,
+        size: rowsPerPage,
         filter,
       });
       
       setRoles(response.content);
+      setTotalCount(response.totalElements || response.content.length);
       console.log('Fetched roles:', response.content);
     } catch (err: unknown) {
       console.error('Error fetching roles:', err);
@@ -134,12 +141,24 @@ const RoleManagement: React.FC = () => {
 
   useEffect(() => {
     fetchRoles();
-    fetchAvailableScopes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, searchTerm]);
+
+  useEffect(() => {
+    fetchAvailableScopes();
   }, []);
 
   const handleSearch = () => {
-    fetchRoles();
+    setPage(0);
+  };
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   const handleCreate = () => {
@@ -486,7 +505,16 @@ const RoleManagement: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
-
+      {/* Pagination */}
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 50, 100]}
+        component="div"
+        count={totalCount}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       {/* Create/Edit Role Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>

@@ -76,7 +76,7 @@ export const AccountManagement: React.FC = () => {
 
   // Pagination
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [totalCount, setTotalCount] = useState(0);
 
   // Search and filtering
@@ -456,13 +456,13 @@ export const AccountManagement: React.FC = () => {
 
       {/* Pagination */}
       <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 50, 100]}
         component="div"
         count={totalCount}
+        rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
-        rowsPerPage={rowsPerPage}
         onRowsPerPageChange={handleChangeRowsPerPage}
-        rowsPerPageOptions={[10, 20, 50, 100]}
       />
       </ManagementLayout>
 
