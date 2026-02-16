@@ -54,6 +54,7 @@ import {
   Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { UserService, User, UserAccount } from '@services/userService';
+import { JsonPatchOperation } from '@/utils/jsonPatchUtils';
 
 const Profile: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -155,12 +156,7 @@ const Profile: React.FC = () => {
       setError(null);
 
       // Build JSON Patch operations for changed fields
-      interface JsonPatch {
-        op: string;
-        path: string;
-        value: string | boolean | number | string[] | Record<string, unknown> | UserAccount[] | undefined;
-      }
-      const patches: JsonPatch[] = [];
+      const patches: JsonPatchOperation[] = [];
       const editableFields: (keyof User)[] = [
         'firstName', 'lastName', 'email', 'phoneNumber',
         'country', 'state', 'city', 'address1', 'address2',
@@ -171,9 +167,9 @@ const Profile: React.FC = () => {
       editableFields.forEach(field => {
         if (editedUser[field] !== undefined && editedUser[field] !== user[field]) {
           patches.push({
-            op: 'replace',
+            op: 'replace' as const,
             path: `/${field}`,
-            value: editedUser[field] as string | boolean | number | string[] | Record<string, unknown> | UserAccount[] | undefined
+            value: editedUser[field]
           });
         }
       });

@@ -96,7 +96,7 @@ describe('RoleService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: [] }),
-      });
+      } as unknown as Response);
 
       await roleService.getRoles({
         page: 0,
@@ -104,7 +104,8 @@ describe('RoleService', () => {
       });
 
       const callArgs = mockFetchWithTokenRefresh.mock.calls[0];
-      const body = JSON.parse(callArgs[1].body);
+      const requestInit = callArgs[1] as RequestInit;
+      const body = JSON.parse(requestInit.body as string);
       expect(body).toEqual({ roles: [] });
     });
 
@@ -112,7 +113,7 @@ describe('RoleService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: [mockRole] }),
-      });
+      } as unknown as Response);
 
       await roleService.getRoles({
         page: 0,
@@ -121,7 +122,8 @@ describe('RoleService', () => {
       });
 
       const callArgs = mockFetchWithTokenRefresh.mock.calls[0];
-      const body = JSON.parse(callArgs[1].body);
+      const requestInit = callArgs[1] as RequestInit;
+      const body = JSON.parse(requestInit.body as string);
       expect(body).toEqual({ roles: ['ADMIN'] });
     });
 
@@ -130,7 +132,7 @@ describe('RoleService', () => {
         ok: false,
         status: 400,
         text: async () => 'API Error',
-      });
+      } as unknown as Response);
 
       await expect(roleService.getRoles({
         page: 0,
@@ -148,7 +150,7 @@ describe('RoleService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: roles }),
-      });
+      } as unknown as Response);
 
       const result = await roleService.getRoles({
         page: 0,
@@ -163,7 +165,7 @@ describe('RoleService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: [] }),
-      });
+      } as unknown as Response);
 
       const result = await roleService.getRoles({
         page: 0,
@@ -178,7 +180,7 @@ describe('RoleService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: mockRoles }),
-      });
+      } as unknown as Response);
 
       await roleService.getRoles({
         page: 2,

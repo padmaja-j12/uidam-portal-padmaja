@@ -47,6 +47,7 @@ import {
 import { UserService, User } from '../../../services/userService';
 import { createFieldChangeHandler } from '../../../utils/formUtils';
 import { logger } from '../../../utils/logger';
+import { JsonPatchOperation } from '../../../utils/jsonPatchUtils';
 
 interface EditUserModalProps {
   open: boolean;
@@ -161,10 +162,10 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const createPatchOperations = (): Array<{op: string, path: string, value: any}> => {
+  const createPatchOperations = (): JsonPatchOperation[] => {
     if (!user) return [];
 
-    const patches: Array<{op: string, path: string, value: any}> = [];
+    const patches: JsonPatchOperation[] = [];
     const fields: Array<keyof FormData> = [
       'firstName', 'lastName', 'email', 'phoneNumber', 'country', 'state', 
       'city', 'address1', 'address2', 'postalCode', 'gender', 'birthDate', 
@@ -196,7 +197,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       
       if (hasChanged) {
         patches.push({
-          op: 'replace',
+          op: 'replace' as const,
           path: `/${field}`,
           value: newValue === '' ? null : newValue // Convert empty strings to null
         });

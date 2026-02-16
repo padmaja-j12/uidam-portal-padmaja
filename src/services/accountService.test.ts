@@ -77,7 +77,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      } as any);
+      } as unknown as Response);
 
       const result = await AccountService.createAccount({
         accountName: 'New Account'
@@ -93,7 +93,7 @@ describe('AccountService', () => {
         status: 400,
         statusText: 'Bad Request',
         text: jest.fn().mockResolvedValueOnce('Invalid')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.createAccount({
         accountName: 'Test'
@@ -116,7 +116,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockRejectedValueOnce(new Error('Bad JSON'))
-      });
+      } as unknown as Response);
 
       const result = await AccountService.createAccount({
         accountName: 'Test'
@@ -131,7 +131,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as unknown as Response);
 
       const result = await AccountService.getAccount('acc-001');
 
@@ -145,7 +145,7 @@ describe('AccountService', () => {
         status: 404,
         statusText: 'Not Found',
         text: jest.fn().mockResolvedValueOnce('Not found')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.getAccount('acc-999');
 
@@ -168,7 +168,7 @@ describe('AccountService', () => {
         status: 400,
         statusText: 'Bad Request',
         text: jest.fn().mockResolvedValueOnce('')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.updateAccount('acc-001', {});
 
@@ -183,7 +183,7 @@ describe('AccountService', () => {
         status: 403,
         statusText: 'Forbidden',
         text: jest.fn().mockResolvedValueOnce('')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.deleteAccount('acc-001');
 
@@ -196,7 +196,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as unknown as Response);
 
       await AccountService.createAccount({ accountName: 'New' });
 
@@ -207,7 +207,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as unknown as Response);
 
       await AccountService.getAccount('acc-001');
 
@@ -218,7 +218,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as unknown as Response);
 
       await AccountService.updateAccount('acc-001', {});
 
@@ -229,7 +229,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce({})
-      });
+      } as unknown as Response);
 
       await AccountService.deleteAccount('acc-001');
 
@@ -242,7 +242,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as unknown as Response);
 
       await AccountService.createAccount({ accountName: 'New' });
 
@@ -253,7 +253,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as unknown as Response);
 
       await AccountService.getAccount('acc-001');
 
@@ -264,7 +264,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as unknown as Response);
 
       await AccountService.updateAccount('acc-001', {});
 
@@ -275,7 +275,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce({})
-      });
+      } as unknown as Response);
 
       await AccountService.deleteAccount('acc-001');
 
@@ -290,7 +290,7 @@ describe('AccountService', () => {
         status: 400,
         statusText: 'Bad Request',
         text: jest.fn().mockResolvedValueOnce('Invalid data')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.createAccount({ accountName: 'Bad' });
 
@@ -303,7 +303,7 @@ describe('AccountService', () => {
         status: 401,
         statusText: 'Unauthorized',
         text: jest.fn().mockResolvedValueOnce('Auth failed')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.getAccount('acc-001');
 
@@ -316,7 +316,7 @@ describe('AccountService', () => {
         status: 403,
         statusText: 'Forbidden',
         text: jest.fn().mockResolvedValueOnce('Access denied')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.updateAccount('acc-001', {});
 
@@ -329,7 +329,7 @@ describe('AccountService', () => {
         status: 500,
         statusText: 'Internal Server Error',
         text: jest.fn().mockResolvedValueOnce('Server error')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.deleteAccount('acc-001');
 
@@ -342,7 +342,7 @@ describe('AccountService', () => {
         status: 404,
         statusText: 'Not Found',
         text: jest.fn().mockResolvedValueOnce('Account not found')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.getAccount('nonexistent');
 
@@ -356,7 +356,7 @@ describe('AccountService', () => {
         status: 405,
         statusText: 'Method Not Allowed',
         text: jest.fn().mockResolvedValueOnce('Method not allowed')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.createAccount({ accountName: 'Test' });
 
@@ -369,7 +369,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         text: jest.fn().mockResolvedValueOnce('Account updated successfully')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.updateAccount('acc-001', { accountName: 'Updated' });
 
@@ -381,7 +381,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         text: jest.fn().mockResolvedValueOnce('Account deleted successfully')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.deleteAccount('acc-001');
 
@@ -414,7 +414,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce({ ...mockAccount, accountName: '' })
-      });
+      } as unknown as Response);
 
       const result = await AccountService.createAccount({ accountName: '' });
 
@@ -425,7 +425,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as unknown as Response);
 
       const result = await AccountService.createAccount({
         accountName: 'Test',
@@ -441,7 +441,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         text: jest.fn().mockResolvedValueOnce('Updated')
-      });
+      } as unknown as Response);
 
       const result = await AccountService.updateAccount('acc-001', {});
 
@@ -452,7 +452,7 @@ describe('AccountService', () => {
       mockFetchWithTokenRefresh.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockAccount)
-      });
+      } as unknown as Response);
 
       const result = await AccountService.getAccount('acc-001-special_chars');
 
@@ -640,7 +640,7 @@ describe('AccountService', () => {
         mockFetchWithTokenRefresh.mockResolvedValueOnce({
           ok: true,
           json: jest.fn().mockResolvedValueOnce([mockMapping])
-        });
+        } as unknown as Response);
 
         const result = await AccountService.getUserAccountMappings('user-001');
 
@@ -653,7 +653,7 @@ describe('AccountService', () => {
           ok: false,
           status: 404,
           text: jest.fn().mockResolvedValueOnce('Failed')
-        });
+        } as unknown as Response);
 
         await expect(AccountService.getUserAccountMappings('user-001')).rejects.toThrow();
       });
@@ -664,7 +664,7 @@ describe('AccountService', () => {
         mockFetchWithTokenRefresh.mockResolvedValueOnce({
           ok: true,
           json: jest.fn().mockResolvedValueOnce([mockMapping])
-        });
+        } as unknown as Response);
 
         const result = await AccountService.getAccountUserMappings('acc-001');
 
@@ -677,7 +677,7 @@ describe('AccountService', () => {
           ok: false,
           status: 404,
           text: jest.fn().mockResolvedValueOnce('Failed')
-        });
+        } as unknown as Response);
 
         await expect(AccountService.getAccountUserMappings('acc-001')).rejects.toThrow();
       });
@@ -766,3 +766,4 @@ describe('AccountService', () => {
     });
   });
 });
+
