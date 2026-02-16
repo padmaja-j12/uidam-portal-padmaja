@@ -84,24 +84,58 @@ global.ResizeObserver = class ResizeObserver {
   }
 } as any;
 
-// Suppress console errors in tests (optional - remove if you want to see all errors)
+// Suppress console errors/warnings/logs in tests (optional - remove if you want to see all errors)
 const originalError = console.error;
+const originalWarn = console.warn;
+const originalLog = console.log;
+
 beforeAll(() => {
+  // Suppress expected console.error messages during tests
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('Warning: ReactDOM.render') ||
        args[0].includes('Warning: useLayoutEffect') ||
-       args[0].includes('Not implemented: HTMLFormElement.prototype.submit'))
+       args[0].includes('Not implemented: HTMLFormElement.prototype.submit') ||
+       args[0].includes('User filter API error:') ||
+       args[0].includes('Password reset request failed:') ||
+       args[0].includes('Failed to decode JWT token:'))
     ) {
       return;
     }
     originalError.call(console, ...args);
   };
+
+  // Suppress expected console.warn messages during tests
+  console.warn = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Could not extract user_id from token') ||
+       args[0].includes('Could not extract user_id from token for password reset'))
+    ) {
+      return;
+    }
+    originalWarn.call(console, ...args);
+  };
+
+  // Suppress expected console.log messages during tests
+  console.log = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Received 401, attempting token refresh') ||
+       args[0].includes('Decoded user_id from token') ||
+       args[0].includes('Added user-id header'))
+    ) {
+      return;
+    }
+    originalLog.call(console, ...args);
+  };
 });
 
 afterAll(() => {
   console.error = originalError;
+  console.warn = originalWarn;
+  console.log = originalLog;
 });
 
 // Mock localStorage

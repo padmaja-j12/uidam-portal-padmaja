@@ -25,9 +25,9 @@ import {
   UsersFilterV1,
   UsersFilterV2,
   UserStatusChangeRequest,
-  UserMetaDataRequest,
-  AccountRoleMappingOperation
+  UserMetaDataRequest
 } from './userService';
+import { JsonPatchOperation } from '../utils/jsonPatchUtils';
 import { API_CONFIG } from '@/config/app.config';
 
 // Mock the tokenManager module
@@ -209,7 +209,7 @@ describe('UserService', () => {
     describe('updateUserV1', () => {
       it('should update user with patches', async () => {
         const patches = [
-          { op: 'replace', path: '/firstName', value: 'Updated' }
+          { op: 'replace', path: '/firstName', value: 'Updated' } as const
         ];
 
         const mockResponse = { code: 'SUCCESS', data: { ...mockUser, firstName: 'Updated' } };
@@ -230,6 +230,7 @@ describe('UserService', () => {
       });
 
       it('should handle update error', async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const patches: any[] = [];
         const mockError = {
           code: 'INVALID_PATCH',
@@ -437,7 +438,7 @@ describe('UserService', () => {
     describe('updateUserV2', () => {
       it('should update user via V2 API', async () => {
         const patches = [
-          { op: 'replace', path: '/status', value: 'BLOCKED' }
+          { op: 'replace', path: '/status', value: 'BLOCKED' } as const
         ];
 
         const mockResponse = { code: 'SUCCESS', data: { ...mockUser, status: 'BLOCKED' } };
@@ -602,7 +603,7 @@ describe('UserService', () => {
 
     describe('updateExternalUser', () => {
       it('should update external user', async () => {
-        const patches = [{ op: 'replace', path: '/email', value: 'new@example.com' }];
+        const patches = [{ op: 'replace', path: '/email', value: 'new@example.com' } as const];
 
         const mockResponse = { code: 'SUCCESS', data: { ...mockUser, email: 'new@example.com' } };
         (global.fetch as jest.Mock).mockResolvedValue({
@@ -768,7 +769,7 @@ describe('UserService', () => {
 
     describe('updateSelfUser', () => {
       it('should update current user', async () => {
-        const patches = [{ op: 'replace', path: '/locale', value: 'fr-FR' }];
+        const patches = [{ op: 'replace', path: '/locale', value: 'fr-FR' } as const];
 
         const mockResponse = { code: 'SUCCESS', data: { ...mockUser, locale: 'fr-FR' } };
         (global.fetch as jest.Mock).mockResolvedValue({
@@ -1247,8 +1248,8 @@ describe('UserService', () => {
           json: async () => mockResponse
         });
 
-        const patches: AccountRoleMappingOperation[] = [
-          { op: 'REPLACE', path: '/lastName', value: undefined }
+        const patches: JsonPatchOperation[] = [
+          { op: 'replace', path: '/lastName', value: undefined }
         ];
 
         await UserService.updateUserV1(1, patches);

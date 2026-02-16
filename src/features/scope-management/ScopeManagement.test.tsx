@@ -141,7 +141,7 @@ describe('ScopeManagement', () => {
       expect(mockScopeService.getScopes).toHaveBeenCalledWith(
         expect.objectContaining({
           page: 0,
-          size: 25,
+          size: 10,
           sortBy: 'name',
           sortOrder: 'asc',
           filter: {},

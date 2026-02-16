@@ -20,6 +20,7 @@
 
 import { API_CONFIG } from '../config/app.config';
 import { handleApiResponse, getApiHeaders, fetchWithTokenRefresh } from './apiUtils';
+import { JsonPatchOperation } from '../utils/jsonPatchUtils';
 
 // API Response interfaces
 export interface ApiResponse<T> {
@@ -50,6 +51,7 @@ export interface User {
   timeZone?: string;
   notificationConsent?: boolean;
   devIds?: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   additionalAttributes?: Record<string, any>;
   accounts?: UserAccount[];
   roles?: string[];
@@ -182,10 +184,10 @@ export class UserService {
   /**
    * Updates a user's information using JSON Patch operations (V1 API)
    * @param {number} id - The unique identifier of the user to update
-   * @param {any[]} patches - Array of JSON Patch operations to apply
+   * @param {JsonPatchOperation[]} patches - Array of JSON Patch operations to apply
    * @returns {Promise<ApiResponse<User>>} The API response containing the updated user
    */
-  static async updateUserV1(id: number, patches: any[]): Promise<ApiResponse<User>> {
+  static async updateUserV1(id: number, patches: JsonPatchOperation[]): Promise<ApiResponse<User>> {
     const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(patches),
@@ -270,10 +272,10 @@ export class UserService {
   /**
    * Updates a user's information including account associations using JSON Patch (V2 API)
    * @param {number} id - The unique identifier of the user to update
-   * @param {any[]} patches - Array of JSON Patch operations to apply
+   * @param {JsonPatchOperation[]} patches - Array of JSON Patch operations to apply
    * @returns {Promise<ApiResponse<User>>} The API response containing the updated user
    */
-  static async updateUserV2(id: number, patches: any[]): Promise<ApiResponse<User>> {
+  static async updateUserV2(id: number, patches: JsonPatchOperation[]): Promise<ApiResponse<User>> {
     const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v2/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(patches),
@@ -379,10 +381,10 @@ export class UserService {
   /**
    * Updates an external user's information using JSON Patch operations
    * @param {number} id - The unique identifier of the external user to update
-   * @param {any[]} patches - Array of JSON Patch operations to apply
+   * @param {JsonPatchOperation[]} patches - Array of JSON Patch operations to apply
    * @returns {Promise<ApiResponse<User>>} The API response containing the updated external user
    */
-  static async updateExternalUser(id: number, patches: any[]): Promise<ApiResponse<User>> {
+  static async updateExternalUser(id: number, patches: JsonPatchOperation[]): Promise<ApiResponse<User>> {
     const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/external/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(patches),
@@ -514,10 +516,10 @@ export class UserService {
 
   /**
    * Updates the currently authenticated user's information using JSON Patch operations
-   * @param {any[]} patches - Array of JSON Patch operations to apply to self
+   * @param {JsonPatchOperation[]} patches - Array of JSON Patch operations to apply to self
    * @returns {Promise<ApiResponse<User>>} The API response containing the updated user details
    */
-  static async updateSelfUser(patches: any[]): Promise<ApiResponse<User>> {
+  static async updateSelfUser(patches: JsonPatchOperation[]): Promise<ApiResponse<User>> {
     const token = localStorage.getItem('uidam_admin_token');
     
     if (!token) {
@@ -585,7 +587,7 @@ export class UserService {
    * Retrieves all available user attribute definitions
    * @returns {Promise<ApiResponse<any[]>>} The API response containing user attribute metadata
    */
-  static async getUserAttributes(): Promise<ApiResponse<any[]>> {
+  static async getUserAttributes(): Promise<ApiResponse<any[]>> { // eslint-disable-line @typescript-eslint/no-explicit-any
     const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/attributes`, {
       method: 'GET',
     });
@@ -597,7 +599,7 @@ export class UserService {
    * @param {UserMetaDataRequest[]} attributes - Array of user attribute metadata to update
    * @returns {Promise<ApiResponse<any[]>>} The API response containing updated attribute metadata
    */
-  static async updateUserAttributes(attributes: UserMetaDataRequest[]): Promise<ApiResponse<any[]>> {
+  static async updateUserAttributes(attributes: UserMetaDataRequest[]): Promise<ApiResponse<any[]>> { // eslint-disable-line @typescript-eslint/no-explicit-any
     const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/attributes`, {
       method: 'PUT',
       body: JSON.stringify(attributes),
@@ -608,11 +610,11 @@ export class UserService {
   // Utility Functions
   /**
    * Retrieves a user by username with optional account filtering
-   * @param {string} userName - The username to search for
-   * @param {string} [accountName] - Optional account name to filter the user
-   * @returns {Promise<ApiResponse<any>>} The API response containing the user details
+   * @param {string} userName The username to search for
+   * @param {string} [accountName] Optional account name to filter the user
+   * @returns {Promise<ApiResponse<any>>} Promise resolving to user details
    */
-  static async getUserByUserName(userName: string, accountName?: string): Promise<ApiResponse<any>> {
+  static async getUserByUserName(userName: string, accountName?: string): Promise<ApiResponse<any>> { // eslint-disable-line @typescript-eslint/no-explicit-any
     let urlPath = `${API_CONFIG.API_BASE_URL}/v1/users/${userName}/byUserName`;
     if (accountName) {
       urlPath += `?accountName=${accountName}`;
@@ -627,11 +629,11 @@ export class UserService {
   // User Events
   /**
    * Adds an event to a user's activity log
-   * @param {number} userId - The unique identifier of the user
-   * @param {any} event - The event data to log
-   * @returns {Promise<ApiResponse<string>>} The API response confirming event creation
+   * @param {number} userId The unique identifier of the user
+   * @param {any} event The event data to log
+   * @returns {Promise<ApiResponse<string>>} Promise resolving to event creation confirmation
    */
-  static async addUserEvent(userId: number, event: any): Promise<ApiResponse<string>> {
+  static async addUserEvent(userId: number, event: any): Promise<ApiResponse<string>> { // eslint-disable-line @typescript-eslint/no-explicit-any
     const response = await fetchWithTokenRefresh(`${API_CONFIG.API_BASE_URL}/v1/users/${userId}/events`, {
       method: 'POST',
       body: JSON.stringify(event),

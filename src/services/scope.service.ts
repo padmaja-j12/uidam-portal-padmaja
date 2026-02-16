@@ -34,9 +34,9 @@ import { fetchWithTokenRefresh } from './apiUtils';
 export class ScopeService {
   /**
    * Retrieves a paginated list of scopes with optional filtering
-   * @param {FilterParams & { filter?: ScopeFilterRequest }} params - Pagination parameters and optional scope filter
-   * @returns {Promise<PaginatedResponse<Scope>>} Paginated response containing scopes
-   * @throws {Error} If the API request fails
+   * @param {Object} params Pagination parameters and optional scope filter
+   * @returns {Promise<PaginatedResponse<Scope>>} Promise resolving to paginated response containing scopes
+   * @throws Error if the API request fails
    */
   async getScopes(params: FilterParams & { filter?: ScopeFilterRequest }): Promise<PaginatedResponse<Scope>> {
     // Build filter request - backend requires scopes field even if empty

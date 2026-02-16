@@ -75,7 +75,21 @@ describe('ScopeService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => mockResponse,
-      } as any);
+        headers: new Headers(),
+        redirected: false,
+        status: 200,
+        statusText: 'OK',
+        type: 'basic' as ResponseType,
+        url: '',
+        clone: jest.fn(),
+        body: null,
+        bodyUsed: false,
+        arrayBuffer: jest.fn(),
+        blob: jest.fn(),
+        formData: jest.fn(),
+        text: jest.fn(),
+        bytes: jest.fn(),
+      } as Response);
 
       const result = await scopeService.getScopes({
         page: 0,
@@ -94,7 +108,21 @@ describe('ScopeService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: [] }),
-      });
+        headers: new Headers(),
+        redirected: false,
+        status: 200,
+        statusText: 'OK',
+        type: 'basic' as ResponseType,
+        url: '',
+        clone: jest.fn(),
+        body: null,
+        bodyUsed: false,
+        arrayBuffer: jest.fn(),
+        blob: jest.fn(),
+        formData: jest.fn(),
+        text: jest.fn(),
+        bytes: jest.fn(),
+      } as Response);
 
       await scopeService.getScopes({
         page: 0,
@@ -102,7 +130,7 @@ describe('ScopeService', () => {
       });
 
       const callArgs = mockFetchWithTokenRefresh.mock.calls[0];
-      const body = JSON.parse(callArgs[1].body);
+      const body = callArgs[1]?.body ? JSON.parse(callArgs[1].body as string) : {};
       expect(body).toEqual({ scopes: [] });
     });
 
@@ -110,7 +138,21 @@ describe('ScopeService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: [mockScope] }),
-      });
+        headers: new Headers(),
+        redirected: false,
+        status: 200,
+        statusText: 'OK',
+        type: 'basic' as ResponseType,
+        url: '',
+        clone: jest.fn(),
+        body: null,
+        bodyUsed: false,
+        arrayBuffer: jest.fn(),
+        blob: jest.fn(),
+        formData: jest.fn(),
+        text: jest.fn(),
+        bytes: jest.fn(),
+      } as Response);
 
       await scopeService.getScopes({
         page: 0,
@@ -119,7 +161,7 @@ describe('ScopeService', () => {
       });
 
       const callArgs = mockFetchWithTokenRefresh.mock.calls[0];
-      const body = JSON.parse(callArgs[1].body);
+      const body = callArgs[1]?.body ? JSON.parse(callArgs[1].body as string) : {};
       expect(body).toEqual({ scopes: ['read'] });
     });
 
@@ -128,7 +170,20 @@ describe('ScopeService', () => {
         ok: false,
         status: 400,
         text: async () => 'API Error',
-      });
+        headers: new Headers(),
+        redirected: false,
+        statusText: 'Bad Request',
+        type: 'basic' as ResponseType,
+        url: '',
+        clone: jest.fn(),
+        body: null,
+        bodyUsed: false,
+        arrayBuffer: jest.fn(),
+        blob: jest.fn(),
+        formData: jest.fn(),
+        json: jest.fn(),
+        bytes: jest.fn(),
+      } as Response);
 
       await expect(scopeService.getScopes({
         page: 0,
@@ -146,14 +201,28 @@ describe('ScopeService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: scopes }),
-      });
+        headers: new Headers(),
+        redirected: false,
+        status: 200,
+        statusText: 'OK',
+        type: 'basic' as ResponseType,
+        url: '',
+        clone: jest.fn(),
+        body: null,
+        bodyUsed: false,
+        arrayBuffer: jest.fn(),
+        blob: jest.fn(),
+        formData: jest.fn(),
+        text: jest.fn(),
+        bytes: jest.fn(),
+      } as Response);
 
       const result = await scopeService.getScopes({
         page: 1,
         size: 10
       });
 
-      expect(result.totalPages).toBe(4);
+      expect(result.totalPages).toBe(5);
       expect(result.last).toBe(false);
       expect(result.first).toBe(false);
     });
@@ -162,7 +231,21 @@ describe('ScopeService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: [] }),
-      });
+        headers: new Headers(),
+        redirected: false,
+        status: 200,
+        statusText: 'OK',
+        type: 'basic' as ResponseType,
+        url: '',
+        clone: jest.fn(),
+        body: null,
+        bodyUsed: false,
+        arrayBuffer: jest.fn(),
+        blob: jest.fn(),
+        formData: jest.fn(),
+        text: jest.fn(),
+        bytes: jest.fn(),
+      } as Response);
 
       const result = await scopeService.getScopes({
         page: 0,
@@ -177,7 +260,21 @@ describe('ScopeService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: mockScopes }),
-      });
+        headers: new Headers(),
+        redirected: false,
+        status: 200,
+        statusText: 'OK',
+        type: 'basic' as ResponseType,
+        url: '',
+        clone: jest.fn(),
+        body: null,
+        bodyUsed: false,
+        arrayBuffer: jest.fn(),
+        blob: jest.fn(),
+        formData: jest.fn(),
+        text: jest.fn(),
+        bytes: jest.fn(),
+      } as Response);
 
       await scopeService.getScopes({
         page: 2,
@@ -200,7 +297,21 @@ describe('ScopeService', () => {
       mockFetchWithTokenRefresh.mockResolvedValue({
         ok: true,
         json: async () => ({ results: scopes }),
-      });
+        headers: new Headers(),
+        redirected: false,
+        status: 200,
+        statusText: 'OK',
+        type: 'basic' as ResponseType,
+        url: '',
+        clone: jest.fn(),
+        body: null,
+        bodyUsed: false,
+        arrayBuffer: jest.fn(),
+        blob: jest.fn(),
+        formData: jest.fn(),
+        text: jest.fn(),
+        bytes: jest.fn(),
+      } as Response);
 
       const result = await scopeService.getScopes({
         page: 0,

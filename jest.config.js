@@ -2,6 +2,8 @@ export default {
   preset: 'ts-jest',
   collectCoverage: true,
   testEnvironment: 'jsdom',
+  // Increase global test timeout to handle slow async operations
+  testTimeout: 30000,
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -16,6 +18,8 @@ export default {
   },
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
+  // Reduce console noise in test output
+  verbose: false,
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',

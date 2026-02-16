@@ -128,15 +128,15 @@ const UserManagement: React.FC = () => {
         if (Array.isArray(response)) {
           // Direct array response
           usersList = response;
-        } else if (response.data && Array.isArray(response.data)) {
-          // Wrapped in data property
-          usersList = response.data;
-        } else if (response && typeof response === 'object') {
-          // Check if response itself is the user object or has other properties
-          usersList = [];
+        } else if (response && typeof response === 'object' && 'data' in response) {
+          const dataResponse = response as { data?: unknown };
+          if (Array.isArray(dataResponse.data)) {
+            // Wrapped in data property
+            usersList = dataResponse.data as User[];
+          }
         }
         // Always set users state with the processed list (empty array if no data)
-// This ensures consistent state management regardless of API response format
+        // This ensures consistent state management regardless of API response format
         setUsers(usersList);
         
         // For V1 API without total count, fetch total separately with large pageSize
@@ -153,8 +153,11 @@ const UserManagement: React.FC = () => {
             let totalList: User[] = [];
             if (Array.isArray(totalResponse)) {
               totalList = totalResponse;
-            } else if (totalResponse.data && Array.isArray(totalResponse.data)) {
-              totalList = totalResponse.data;
+            } else if (totalResponse && typeof totalResponse === 'object' && 'data' in totalResponse) {
+              const dataResponse = totalResponse as { data?: unknown };
+              if (Array.isArray(dataResponse.data)) {
+                totalList = dataResponse.data as User[];
+              }
             }
             
             setTotalUsers(totalList.length);

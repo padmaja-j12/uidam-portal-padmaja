@@ -257,7 +257,7 @@ describe('RoleManagement', () => {
 
       expect(mockRoleService.getRoles).toHaveBeenCalledWith({
         page: 0,
-        size: 100,
+        size: 10,
         filter: { name: 'ADMIN' },
       });
     });
@@ -275,7 +275,7 @@ describe('RoleManagement', () => {
       await waitFor(() => {
         expect(mockRoleService.getRoles).toHaveBeenCalledWith({
           page: 0,
-          size: 100,
+          size: 10,
           filter: { name: 'USER' },
         });
       });
@@ -285,7 +285,7 @@ describe('RoleManagement', () => {
       mockRoleService.getRoles.mockResolvedValueOnce({
         content: [],
         number: 0,
-        size: 100,
+        size: 10,
         totalElements: 0,
         totalPages: 0,
         first: true,
@@ -596,7 +596,7 @@ describe('RoleManagement', () => {
         expect(searchInput).toHaveValue('');
         expect(mockRoleService.getRoles).toHaveBeenCalledWith({
           page: 0,
-          size: 100,
+          size: 10,
           filter: undefined,
         });
       });

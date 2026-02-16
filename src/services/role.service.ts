@@ -35,9 +35,9 @@ import { fetchWithTokenRefresh } from './apiUtils';
 export class RoleService {
   /**
    * Retrieves a paginated list of roles with optional filtering
-   * @param {FilterParams & { filter?: RoleFilterRequest }} params - Pagination parameters and optional role filter
-   * @returns {Promise<PaginatedResponse<Role>>} Paginated response containing roles
-   * @throws {Error} If the API request fails
+   * @param {Object} params Pagination parameters and optional role filter
+   * @returns {Promise<PaginatedResponse<Role>>} Promise resolving to paginated response containing roles
+   * @throws Error if the API request fails
    */
   async getRoles(params: FilterParams & { filter?: RoleFilterRequest }): Promise<PaginatedResponse<Role>> {
     // Build filter request - backend requires roles field even if empty
