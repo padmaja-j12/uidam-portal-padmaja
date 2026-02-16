@@ -130,22 +130,22 @@ const mockUsers: User[] = [
 
 // Tests for UserManagement component
 describe('UserManagement', () => {
-  const mockFilterUsersV1 = jest.fn();
+  const mockFilterUsersV2 = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (UserService.filterUsersV1 as jest.Mock) = mockFilterUsersV1;
+    (UserService.filterUsersV2 as jest.Mock) = mockFilterUsersV2;
   });
 
   describe('Initial Load', () => {
     it('should render loading state initially', () => {
-      mockFilterUsersV1.mockImplementation(() => new Promise(() => {}));
+      mockFilterUsersV2.mockImplementation(() => new Promise(() => {}));
       render(<UserManagement />);
       expect(screen.getByText(/Loading users/i)).toBeInTheDocument();
     });
 
     it('should load and display users', async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockFilterUsersV2.mockResolvedValue(mockUsers);
       
       render(<UserManagement />);
       
@@ -159,7 +159,7 @@ describe('UserManagement', () => {
     });
 
     it('should show empty state when no users are available', async () => {
-      mockFilterUsersV1.mockResolvedValue([]);
+      mockFilterUsersV2.mockResolvedValue([]);
       
       render(<UserManagement />);
       
@@ -169,7 +169,7 @@ describe('UserManagement', () => {
     });
 
     it('should handle load error', async () => {
-      mockFilterUsersV1.mockRejectedValue(new Error('Network error'));
+      mockFilterUsersV2.mockRejectedValue(new Error('Network error'));
       
       render(<UserManagement />);
       
@@ -179,7 +179,7 @@ describe('UserManagement', () => {
     });
 
     it('should handle invalid response format', async () => {
-      mockFilterUsersV1.mockResolvedValue('invalid');
+      mockFilterUsersV2.mockResolvedValue('invalid');
       
       render(<UserManagement />);
       
@@ -191,7 +191,7 @@ describe('UserManagement', () => {
 
   describe('Status Display', () => {
     it('should display correct status chips for different user statuses', async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockFilterUsersV2.mockResolvedValue(mockUsers);
       
       render(<UserManagement />);
       
@@ -222,7 +222,7 @@ describe('UserManagement', () => {
 
   describe('Search Functionality', () => {
     beforeEach(async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockFilterUsersV2.mockResolvedValue(mockUsers);
       render(<UserManagement />);
       await waitFor(() => {
         expect(screen.getByText('testuser1')).toBeInTheDocument();
@@ -236,7 +236,7 @@ describe('UserManagement', () => {
       await user.type(searchInput, 'testuser1');
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockFilterUsersV2).toHaveBeenCalledWith(
           expect.objectContaining({
             userNames: ['testuser1']
           }),
@@ -252,7 +252,7 @@ describe('UserManagement', () => {
       await user.type(searchInput, '  testuser1  ');
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockFilterUsersV2).toHaveBeenCalledWith(
           expect.objectContaining({
             userNames: ['testuser1']
           }),
@@ -270,7 +270,7 @@ describe('UserManagement', () => {
       });
       
       // Check initial API call doesn't have userNames filter
-      const initialCall = mockFilterUsersV1.mock.calls[0];
+      const initialCall = mockFilterUsersV2.mock.calls[0];
       expect(initialCall[0].userNames).toBeUndefined();
     });
 
@@ -281,7 +281,7 @@ describe('UserManagement', () => {
       await user.type(searchInput, 'test');
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockFilterUsersV2).toHaveBeenCalledWith(
           expect.any(Object),
           expect.objectContaining({
             pageNumber: 0
@@ -293,7 +293,7 @@ describe('UserManagement', () => {
 
   describe('Status Filter Functionality', () => {
     beforeEach(async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockFilterUsersV2.mockResolvedValue(mockUsers);
       render(<UserManagement />);
       await waitFor(() => {
         expect(screen.getByText('testuser1')).toBeInTheDocument();
@@ -315,7 +315,7 @@ describe('UserManagement', () => {
       await user.click(activeOption);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockFilterUsersV2).toHaveBeenCalledWith(
           expect.objectContaining({
             status: ['ACTIVE']
           }),
@@ -334,7 +334,7 @@ describe('UserManagement', () => {
       await user.click(pendingOption);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockFilterUsersV2).toHaveBeenCalledWith(
           expect.objectContaining({
             status: ['PENDING']
           }),
@@ -353,7 +353,7 @@ describe('UserManagement', () => {
       await user.click(blockedOption);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockFilterUsersV2).toHaveBeenCalledWith(
           expect.objectContaining({
             status: ['BLOCKED']
           }),
@@ -372,7 +372,7 @@ describe('UserManagement', () => {
       await user.click(rejectedOption);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockFilterUsersV2).toHaveBeenCalledWith(
           expect.objectContaining({
             status: ['REJECTED']
           }),
@@ -391,7 +391,7 @@ describe('UserManagement', () => {
       await user.click(deactivatedOption);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockFilterUsersV2).toHaveBeenCalledWith(
           expect.objectContaining({
             status: ['DEACTIVATED']
           }),
@@ -416,7 +416,7 @@ describe('UserManagement', () => {
       await user.click(allStatusOption);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockFilterUsersV2).toHaveBeenCalledWith(
           expect.not.objectContaining({
             status: expect.anything()
           }),
@@ -440,7 +440,7 @@ describe('UserManagement', () => {
       await user.click(activeOption);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockfilterUsersV2).toHaveBeenCalledWith(
           expect.objectContaining({
             userNames: ['testuser1'],
             status: ['ACTIVE']
@@ -460,7 +460,7 @@ describe('UserManagement', () => {
       await user.click(activeOption);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockfilterUsersV2).toHaveBeenCalledWith(
           expect.any(Object),
           expect.objectContaining({
             pageNumber: 0
@@ -472,7 +472,7 @@ describe('UserManagement', () => {
 
   describe('Pagination', () => {
     beforeEach(async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockfilterUsersV2.mockResolvedValue(mockUsers);
       render(<UserManagement />);
       await waitFor(() => {
         expect(screen.getByText('testuser1')).toBeInTheDocument();
@@ -481,7 +481,7 @@ describe('UserManagement', () => {
 
     it('should display default page size as 5', async () => {
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockfilterUsersV2).toHaveBeenCalledWith(
           expect.any(Object),
           expect.objectContaining({
             pageSize: 5,
@@ -500,7 +500,7 @@ describe('UserManagement', () => {
         userName: `testuser${i + 1}`,
         email: `test${i + 1}@example.com`,
       }));
-      mockFilterUsersV1.mockResolvedValue(manyUsers);
+      mockfilterUsersV2.mockResolvedValue(manyUsers);
       
       render(<UserManagement />);
       
@@ -516,7 +516,7 @@ describe('UserManagement', () => {
         await user.click(enabledNextButton);
         
         await waitFor(() => {
-          expect(mockFilterUsersV1).toHaveBeenCalledWith(
+          expect(mockfilterUsersV2).toHaveBeenCalledWith(
             expect.any(Object),
             expect.objectContaining({
               pageNumber: 1,
@@ -531,7 +531,7 @@ describe('UserManagement', () => {
 
     it('should handle rows per page change', async () => {
       const user = userEvent.setup();
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockfilterUsersV2.mockResolvedValue(mockUsers);
       
       const rowsPerPageSelects = screen.getAllByRole('combobox');
       const rowsPerPageSelect = rowsPerPageSelects[rowsPerPageSelects.length - 1]; // Last dropdown is rows per page
@@ -541,7 +541,7 @@ describe('UserManagement', () => {
       await user.click(option10);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockfilterUsersV2).toHaveBeenCalledWith(
           expect.any(Object),
           expect.objectContaining({
             pageSize: 10,
@@ -560,7 +560,7 @@ describe('UserManagement', () => {
         email: `test${i + 1}@example.com`,
         status: 'ACTIVE' as const,
       }));
-      mockFilterUsersV1.mockResolvedValue(manyUsers);
+      mockfilterUsersV2.mockResolvedValue(manyUsers);
       
       render(<UserManagement />);
       
@@ -576,7 +576,7 @@ describe('UserManagement', () => {
       await user.click(activeOption);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockfilterUsersV2).toHaveBeenCalledWith(
           expect.objectContaining({ status: ['ACTIVE'] }),
           expect.any(Object)
         );
@@ -591,7 +591,7 @@ describe('UserManagement', () => {
         
         // Verify filter is maintained
         await waitFor(() => {
-          expect(mockFilterUsersV1).toHaveBeenCalledWith(
+          expect(mockfilterUsersV2).toHaveBeenCalledWith(
             expect.objectContaining({ status: ['ACTIVE'] }),
             expect.objectContaining({ pageNumber: 1 })
           );
@@ -601,7 +601,7 @@ describe('UserManagement', () => {
 
     it('should call API with correct search parameters', async () => {
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledWith(
+        expect(mockfilterUsersV2).toHaveBeenCalledWith(
           expect.any(Object),
           expect.objectContaining({
             sortBy: 'USER_NAMES',
@@ -616,7 +616,7 @@ describe('UserManagement', () => {
 
   describe('User Actions', () => {
     beforeEach(async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockfilterUsersV2.mockResolvedValue(mockUsers);
       render(<UserManagement />);
       await waitFor(() => {
         expect(screen.getByText('testuser1')).toBeInTheDocument();
@@ -717,7 +717,7 @@ describe('UserManagement', () => {
 
   describe('Modal Interactions', () => {
     beforeEach(async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockfilterUsersV2.mockResolvedValue(mockUsers);
     });
 
     it('should reload users after creating a user', async () => {
@@ -736,7 +736,7 @@ describe('UserManagement', () => {
       await user.click(createModalButton);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledTimes(2);
+        expect(mockfilterUsersV2).toHaveBeenCalledTimes(2);
         expect(screen.getByText(/User created successfully/i)).toBeInTheDocument();
       });
     });
@@ -759,7 +759,7 @@ describe('UserManagement', () => {
       await user.click(updateButton);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledTimes(2);
+        expect(mockfilterUsersV2).toHaveBeenCalledTimes(2);
         expect(screen.getByText(/User updated successfully/i)).toBeInTheDocument();
       });
     });
@@ -782,7 +782,7 @@ describe('UserManagement', () => {
       await user.click(confirmButton);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledTimes(2);
+        expect(mockfilterUsersV2).toHaveBeenCalledTimes(2);
         expect(screen.getByText(/User deleted successfully/i)).toBeInTheDocument();
       });
     });
@@ -805,7 +805,7 @@ describe('UserManagement', () => {
       await user.click(saveButton);
       
       await waitFor(() => {
-        expect(mockFilterUsersV1).toHaveBeenCalledTimes(2);
+        expect(mockfilterUsersV2).toHaveBeenCalledTimes(2);
         expect(screen.getByText('Accounts updated')).toBeInTheDocument();
       });
     }, 15000);
@@ -825,14 +825,14 @@ describe('UserManagement', () => {
       await user.click(cancelButton);
       
       expect(screen.queryByTestId('create-user-modal')).not.toBeInTheDocument();
-      expect(mockFilterUsersV1).toHaveBeenCalledTimes(1); // Only initial load
+      expect(mockfilterUsersV2).toHaveBeenCalledTimes(1); // Only initial load
     }, 15000);
   });
 
   describe('Snackbar Messages', () => {
     it('should auto-hide snackbar after 6 seconds', async () => {
       jest.useFakeTimers();
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockfilterUsersV2.mockResolvedValue(mockUsers);
       
       const user = userEvent.setup({ delay: null });
       render(<UserManagement />);
@@ -861,7 +861,7 @@ describe('UserManagement', () => {
     });
 
     it('should close snackbar when clicking close button', async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockfilterUsersV2.mockResolvedValue(mockUsers);
       
       const user = userEvent.setup();
       render(<UserManagement />);
@@ -895,7 +895,7 @@ describe('UserManagement', () => {
 
   describe('Account Display', () => {
     it('should display user accounts with roles', async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockfilterUsersV2.mockResolvedValue(mockUsers);
       
       render(<UserManagement />);
       
@@ -906,7 +906,7 @@ describe('UserManagement', () => {
     });
 
     it('should handle users with no accounts', async () => {
-      mockFilterUsersV1.mockResolvedValue(mockUsers);
+      mockfilterUsersV2.mockResolvedValue(mockUsers);
       
       render(<UserManagement />);
       
@@ -922,7 +922,7 @@ describe('UserManagement', () => {
 
   describe('Error Handling', () => {
     it('should clear error when dismiss button is clicked', async () => {
-      mockFilterUsersV1.mockRejectedValue(new Error('API Error'));
+      mockfilterUsersV2.mockRejectedValue(new Error('API Error'));
       
       render(<UserManagement />);
       
@@ -935,3 +935,4 @@ describe('UserManagement', () => {
     });
   });
 });
+

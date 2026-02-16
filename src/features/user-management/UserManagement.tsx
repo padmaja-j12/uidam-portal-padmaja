@@ -55,7 +55,7 @@ import {
 } from '@mui/icons-material';
 import ManagementLayout from '../../components/shared/ManagementLayout';
 import { StyledTableHead, StyledTableCell, StyledTableRow } from '../../components/shared/StyledTableComponents';
-import { User, UserService, UsersFilterV1, UserSearchParams } from '../../services/userService';
+import { User, UserService, UsersFilterV2, UserSearchParams } from '../../services/userService';
 import CreateUserModal from './components/CreateUserModal';
 import EditUserModal from './components/EditUserModal';
 import UserDetailsModal from './components/UserDetailsModal';
@@ -69,7 +69,7 @@ const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalUsers, setTotalUsers] = useState(0);
   const [snackbar, setSnackbar] = useState({ 
     open: false, 
@@ -95,7 +95,7 @@ const UserManagement: React.FC = () => {
     
     try {
       // Build filter object
-      const filter: UsersFilterV1 = {};
+      const filter: UsersFilterV2 = {};
       
       // Add search filter if search term exists
       if (searchTerm?.trim()) {
@@ -119,7 +119,7 @@ const UserManagement: React.FC = () => {
 
       try {
         // Call the real API
-        const response = await UserService.filterUsersV1(filter, searchParams);
+        const response = await UserService.filterUsersV2(filter, searchParams);
         console.log('API Response:', response);
         
         // Handle different response formats
@@ -135,7 +135,8 @@ const UserManagement: React.FC = () => {
           // Check if response itself is the user object or has other properties
           usersList = [];
         }
-        
+        // Always set users state with the processed list (empty array if no data)
+// This ensures consistent state management regardless of API response format
         setUsers(usersList);
         
         // For V1 API without total count, fetch total separately with large pageSize
@@ -143,7 +144,7 @@ const UserManagement: React.FC = () => {
         if (usersList.length === rowsPerPage) {
           // Likely there are more records, make a call without pagination to get total
           try {
-            const totalResponse = await UserService.filterUsersV1(filter, {
+            const totalResponse = await UserService.filterUsersV2(filter, {
               ...searchParams,
               pageNumber: 0,
               pageSize: 10000 // Large number to get all records for count
