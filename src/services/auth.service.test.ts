@@ -17,6 +17,8 @@
 ********************************************************************************/
 import { AuthService, TokenResponse } from './auth.service';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 // Mock the config
 jest.mock('@config/app.config', () => ({
   OAUTH_CONFIG: {
@@ -30,6 +32,7 @@ jest.mock('@config/app.config', () => ({
   },
   API_CONFIG: {
     AUTH_SERVER_URL: 'http://auth.example.com',
+    SESSION_API_PREFIX: '',
   },
 }));
 
@@ -1109,6 +1112,7 @@ describe('AuthService', () => {
       localStorage.setItem('uidam_access_token', 'test-token');
 
       // Mock the config to have POST_LOGOUT_REDIRECT_URI
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { OAUTH_CONFIG } = require('@config/app.config');
       OAUTH_CONFIG.POST_LOGOUT_REDIRECT_URI = 'http://localhost:3000/logout-success';
 

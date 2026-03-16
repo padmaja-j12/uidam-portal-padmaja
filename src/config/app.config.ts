@@ -35,6 +35,11 @@ export const API_CONFIG = {
   get AUTH_SERVER_URL() {
     return getConfig().REACT_APP_UIDAM_AUTH_SERVER_URL;
   },
+  // Tenant path prefix for OAuth2 endpoints (e.g. "/sdp" when multitenancy is enabled).
+  // Reuses REACT_APP_SESSION_API_PREFIX — same prefix used by the session service.
+  get SESSION_API_PREFIX() {
+    return getConfig().REACT_APP_SESSION_API_PREFIX || '';
+  },
   get API_BASE_URL() {
     // Use empty string for relative URLs (Vite proxy) when not configured
     return getConfig().REACT_APP_UIDAM_USER_MANAGEMENT_URL || '';

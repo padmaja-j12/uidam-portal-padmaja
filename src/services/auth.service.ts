@@ -94,7 +94,8 @@ export class AuthService {
       const state = this.generateState();
       
       // Construct URL with PKCE parameters if enabled
-      const baseUrl = `${API_CONFIG.AUTH_SERVER_URL}/oauth2/authorize`;
+      // SESSION_API_PREFIX (e.g. "/sdp") is prepended when auth server has multitenancy enabled.
+      const baseUrl = `${API_CONFIG.AUTH_SERVER_URL}${API_CONFIG.SESSION_API_PREFIX}/oauth2/authorize`;
       const scopeValue = OAUTH_CONFIG.SCOPES.join(' ');
       
       let authUrl = `${baseUrl}?response_type=code&client_id=${OAUTH_CONFIG.CLIENT_ID}&redirect_uri=${encodeURIComponent(OAUTH_CONFIG.REDIRECT_URI)}&scope=${encodeURIComponent(scopeValue)}&state=${state}`;
@@ -267,7 +268,7 @@ export class AuthService {
    */
   private async exchangeCodeForTokens(code: string): Promise<TokenResponse> {
     const formData = this.prepareTokenExchangeFormData(code);
-    const tokenUrl = `${API_CONFIG.AUTH_SERVER_URL}/oauth2/token`;
+    const tokenUrl = `${API_CONFIG.AUTH_SERVER_URL}${API_CONFIG.SESSION_API_PREFIX}/oauth2/token`;
     
     console.log('Token exchange request:', {
       url: tokenUrl,
@@ -331,7 +332,7 @@ export class AuthService {
    */
   private async getUserProfile(accessToken: string): Promise<AuthUser> {
     try {
-      const response = await fetch('/oauth2/introspect', { // Use relative URL to go through Vite/nginx proxy
+      const response = await fetch(`${API_CONFIG.SESSION_API_PREFIX}/oauth2/introspect`, { // Use relative URL to go through Vite/nginx proxy
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -393,7 +394,7 @@ export class AuthService {
       formData.append('client_secret', OAUTH_CONFIG.CLIENT_SECRET);
     }
 
-    const response = await fetch('/oauth2/token', { // Use relative URL to go through Vite/nginx proxy
+    const response = await fetch(`${API_CONFIG.SESSION_API_PREFIX}/oauth2/token`, { // Use relative URL to go through Vite/nginx proxy
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -432,7 +433,7 @@ export class AuthService {
         const state = Math.random().toString(36).substring(2, 15);
         
         // Construct logout URL with access_token as query parameter
-        const logoutUrl = `${API_CONFIG.AUTH_SERVER_URL}/oauth2/logout?access_token=${encodeURIComponent(accessToken)}`;
+        const logoutUrl = `${API_CONFIG.AUTH_SERVER_URL}${API_CONFIG.SESSION_API_PREFIX}/oauth2/logout?access_token=${encodeURIComponent(accessToken)}`;
         
         // Prepare form data for logout request
         const formData = new URLSearchParams();

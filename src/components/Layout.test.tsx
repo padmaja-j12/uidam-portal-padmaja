@@ -23,6 +23,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import Layout from './Layout';
 import { uiSlice } from '@store/slices/uiSlice';
 import { authSlice } from '@store/slices/authSlice';
+import { UserService } from '@services/userService';
+import { authService } from '@services/auth.service';
 
 // Mock the UserService
 jest.mock('@services/userService', () => ({
@@ -35,6 +37,14 @@ jest.mock('@services/userService', () => ({
 jest.mock('@services/auth.service', () => ({
   authService: {
     logout: jest.fn(),
+    getStoredScopes: jest.fn().mockReturnValue([
+      'ViewUsers',
+      'ManageUsers',
+      'ManageAccounts',
+      'ViewAccounts',
+      'SelfManage',
+      'ManageUserRolesAndPermissions',
+    ]),
   },
 }));
 
@@ -43,6 +53,19 @@ jest.mock('@hooks/useTheme', () => ({
   useTheme: () => ({
     themeMode: 'light',
     toggleThemeMode: jest.fn(),
+  }),
+}));
+
+// Mock useScopes so navigation items are all visible in tests
+jest.mock('@hooks/useScopes', () => ({
+  useScopes: () => ({
+    scopes: ['ViewUsers', 'ManageUsers', 'ManageAccounts', 'ViewAccounts', 'SelfManage', 'ManageUserRolesAndPermissions'],
+    hasScope: (scope: string) =>
+      ['ViewUsers', 'ManageUsers', 'ManageAccounts', 'ViewAccounts', 'SelfManage', 'ManageUserRolesAndPermissions'].includes(scope),
+    hasAnyScope: (...required: string[]) =>
+      required.some(s =>
+        ['ViewUsers', 'ManageUsers', 'ManageAccounts', 'ViewAccounts', 'SelfManage', 'ManageUserRolesAndPermissions'].includes(s)
+      ),
   }),
 }));
 
@@ -102,9 +125,6 @@ const renderWithProviders = (
 };
 
 describe('Layout', () => {
-  const { UserService } = require('@services/userService');
-  const { authService } = require('@services/auth.service');
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -203,7 +223,7 @@ describe('Layout', () => {
   });
 
   it('should logout and navigate to login when logout is clicked', async () => {
-    authService.logout.mockResolvedValue(undefined);
+    jest.mocked(authService.logout).mockResolvedValue(undefined);
     
     const store = createMockStore();
     renderWithProviders(
@@ -230,7 +250,7 @@ describe('Layout', () => {
   });
 
   it('should call authService.logout when logout is triggered', async () => {
-    authService.logout.mockResolvedValue(undefined);
+    jest.mocked(authService.logout).mockResolvedValue(undefined);
 
     const store = createMockStore();
     renderWithProviders(
@@ -252,7 +272,7 @@ describe('Layout', () => {
   });
 
   it('should handle logout failure gracefully', async () => {
-    authService.logout.mockRejectedValue(new Error('Logout failed'));
+    jest.mocked(authService.logout).mockRejectedValue(new Error('Logout failed'));
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
     const store = createMockStore();
@@ -278,7 +298,7 @@ describe('Layout', () => {
   });
 
   it('should clear Redux state after logout', async () => {
-    authService.logout.mockResolvedValue(undefined);
+    jest.mocked(authService.logout).mockResolvedValue(undefined);
 
     const store = createMockStore();
     renderWithProviders(
@@ -302,7 +322,7 @@ describe('Layout', () => {
   });
 
   it('should close user menu after logout', async () => {
-    authService.logout.mockResolvedValue(undefined);
+    jest.mocked(authService.logout).mockResolvedValue(undefined);
 
     const store = createMockStore();
     renderWithProviders(
@@ -482,7 +502,7 @@ describe('Layout', () => {
 
   describe('Profile Management', () => {
     beforeEach(() => {
-      UserService.getSelfUser.mockClear();
+      jest.mocked(UserService.getSelfUser).mockClear();
     });
 
     it('should fetch user profile on mount if firstName or lastName is missing', async () => {
@@ -503,7 +523,8 @@ describe('Layout', () => {
         lastName: 'Doe',
       };
 
-      UserService.getSelfUser.mockResolvedValue({ data: completeUser });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      jest.mocked(UserService.getSelfUser).mockResolvedValue({ data: completeUser } as any);
 
       const store = createMockStore({
         auth: {
@@ -562,7 +583,7 @@ describe('Layout', () => {
     it('should handle profile fetch error gracefully', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-      UserService.getSelfUser.mockRejectedValue(new Error('Failed to fetch profile'));
+      jest.mocked(UserService.getSelfUser).mockRejectedValue(new Error('Failed to fetch profile'));
 
       const incompleteUser = {
         id: '1',
@@ -623,7 +644,8 @@ describe('Layout', () => {
         status: 'ACTIVE' as const,
       };
 
-      UserService.getSelfUser.mockResolvedValue({ data: completeUser });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      jest.mocked(UserService.getSelfUser).mockResolvedValue({ data: completeUser } as any);
 
       const store = createMockStore({
         auth: {
@@ -672,7 +694,8 @@ describe('Layout', () => {
         status: 'ACTIVE' as const,
       };
 
-      UserService.getSelfUser.mockResolvedValue({ data: completeUser });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      jest.mocked(UserService.getSelfUser).mockResolvedValue({ data: completeUser } as any);
 
       const store = createMockStore({
         auth: {
@@ -719,7 +742,8 @@ describe('Layout', () => {
         status: 'ACTIVE' as const,
       };
 
-      UserService.getSelfUser.mockResolvedValue(directUserResponse);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      jest.mocked(UserService.getSelfUser).mockResolvedValue(directUserResponse as any);
 
       const store = createMockStore({
         auth: {

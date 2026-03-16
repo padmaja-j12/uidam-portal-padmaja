@@ -56,6 +56,7 @@ import {
 } from '@mui/icons-material';
 import ManagementLayout from '../../components/shared/ManagementLayout';
 import { StyledTableHead, StyledTableCell, StyledTableRow } from '../../components/shared/StyledTableComponents';
+import { useScopes } from '@hooks/useScopes';
 import { User, UserService, UsersFilterV2, UserSearchParams } from '../../services/userService';
 import CreateUserModal from './components/CreateUserModal';
 import EditUserModal from './components/EditUserModal';
@@ -65,6 +66,11 @@ import ManageUserAccountsModal from './components/ManageUserAccountsModal';
 import AdminSessionsModal from './components/AdminSessionsModal';
 
 const UserManagement: React.FC = () => {
+  const { hasScope, hasAnyScope } = useScopes();
+  const canManageUsers = hasScope('ManageUsers');        // POST/PUT/DELETE /users
+  const canViewUsers   = hasAnyScope('ViewUsers', 'ManageUsers'); // GET /users
+  const canManageAccounts = hasScope('ManageAccounts');  // manage user-account associations
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -409,13 +415,15 @@ const UserManagement: React.FC = () => {
             </TextField>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCreateUser}
-            >
-              Create User
-            </Button>
+            {canManageUsers && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleCreateUser}
+              >
+                Create User
+              </Button>
+            )}
           </Box>
         </Box>
 
@@ -534,36 +542,51 @@ const UserManagement: React.FC = () => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={() => selectedUser && handleViewUser(selectedUser)}>
-          <ListItemIcon>
-            <PersonIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>View Details</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => selectedUser && handleEditUser(selectedUser)}>
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Edit User</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => selectedUser && handleManageAccounts(selectedUser)}>
-          <ListItemIcon>
-            <ManageAccountsIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Manage Accounts & Roles</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => selectedUser && handleManageAdminSessions(selectedUser)}>
-          <ListItemIcon>
-            <DevicesIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Manage Active Sessions</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => selectedUser && handleDeleteUser(selectedUser)}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Delete User</ListItemText>
-        </MenuItem>
+        {/* View Details — available to anyone who can see the page */}
+        {canViewUsers && (
+          <MenuItem onClick={() => selectedUser && handleViewUser(selectedUser)}>
+            <ListItemIcon>
+              <PersonIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>View Details</ListItemText>
+          </MenuItem>
+        )}
+        {/* Write actions — require ManageUsers */}
+        {canManageUsers && (
+          <MenuItem onClick={() => selectedUser && handleEditUser(selectedUser)}>
+            <ListItemIcon>
+              <EditIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Edit User</ListItemText>
+          </MenuItem>
+        )}
+        {/* Manage accounts on a user — requires ManageAccounts */}
+        {canManageAccounts && (
+          <MenuItem onClick={() => selectedUser && handleManageAccounts(selectedUser)}>
+            <ListItemIcon>
+              <ManageAccountsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Manage Accounts & Roles</ListItemText>
+          </MenuItem>
+        )}
+        {/* Session management — requires ManageUsers */}
+        {canManageUsers && (
+          <MenuItem onClick={() => selectedUser && handleManageAdminSessions(selectedUser)}>
+            <ListItemIcon>
+              <DevicesIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Manage Active Sessions</ListItemText>
+          </MenuItem>
+        )}
+        {/* Delete — requires ManageUsers */}
+        {canManageUsers && (
+          <MenuItem onClick={() => selectedUser && handleDeleteUser(selectedUser)}>
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Delete User</ListItemText>
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Modals */}

@@ -55,6 +55,7 @@ import { RootState } from '@store/index';
 import { toggleSidebar } from '@store/slices/uiSlice';
 import { logout, updateUser } from '@store/slices/authSlice';
 import { useTheme } from '@hooks/useTheme';
+import { useScopes } from '@hooks/useScopes';
 import { FEATURE_FLAGS } from '@config/app.config';
 import { UserService } from '@services/userService';
 import { authService } from '@services/auth.service';
@@ -70,55 +71,64 @@ const navigationItems = [
     text: 'Dashboard',
     icon: <DashboardIcon />,
     path: '/uidam/dashboard',
-    feature: true, // Always available
+    feature: true,
+    requiredScopes: [] as string[], // Always available
   },
   {
     text: 'User Management',
     icon: <PeopleIcon />,
     path: '/uidam/users',
     feature: FEATURE_FLAGS.USER_MANAGEMENT,
+    requiredScopes: ['ViewUsers', 'ManageUsers'],
   },
   {
     text: 'Account Management',
     icon: <BusinessIcon />,
     path: '/uidam/accounts',
     feature: FEATURE_FLAGS.ACCOUNT_MANAGEMENT,
+    requiredScopes: ['ViewAccounts', 'ManageAccounts'],
   },
   {
     text: 'Role Management',
     icon: <SecurityIcon />,
     path: '/uidam/roles',
     feature: FEATURE_FLAGS.ROLE_MANAGEMENT,
+    requiredScopes: ['ManageUserRolesAndPermissions'],
   },
   {
     text: 'Scope Management',
     icon: <AdminPanelSettingsIcon />,
     path: '/uidam/scopes',
     feature: FEATURE_FLAGS.SCOPE_MANAGEMENT,
+    requiredScopes: [] as string[], // TODO: restrict once backend confirms scope
   },
   {
     text: 'Approval Workflow',
     icon: <ApprovalIcon />,
     path: '/uidam/approvals',
     feature: FEATURE_FLAGS.APPROVAL_WORKFLOW,
+    requiredScopes: [] as string[], // TODO: restrict once backend confirms scope
   },
   {
     text: 'Client Management',
     icon: <AppsIcon />,
     path: '/uidam/clients',
     feature: FEATURE_FLAGS.CLIENT_MANAGEMENT,
+    requiredScopes: [] as string[], // TODO: restrict once backend confirms scope
   },
   {
     text: 'Assistant',
     icon: <AdminPanelSettingsIcon />,
     path: '/uidam/assistant',
     feature: true,
+    requiredScopes: [] as string[],
   },
   {
     text: 'Active Sessions',
     icon: <DevicesIcon />,
     path: '/uidam/sessions',
     feature: true,
+    requiredScopes: [] as string[],
   },
 ].filter(item => item.feature);
 
@@ -127,7 +137,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { themeMode, toggleThemeMode } = useTheme();
-  
+  const { hasAnyScope } = useScopes();
+
+  // Filter nav items by token scopes: items with no requiredScopes are always shown;
+  // items with requiredScopes are shown only if the token contains at least one.
+  const visibleNavItems = navigationItems.filter(
+    item => item.requiredScopes.length === 0 || hasAnyScope(...item.requiredScopes)
+  );
+
   const { sidebarOpen } = useSelector((state: RootState) => state.ui);
   const { user } = useSelector((state: RootState) => state.auth);
   
@@ -233,7 +250,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </Toolbar>
       <Divider />
       <List>
-        {navigationItems.map((item) => (
+        {visibleNavItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
               selected={location.pathname.startsWith(item.path)}
@@ -342,7 +359,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               letterSpacing: '0.5px'
             }}
           >
-            {navigationItems.find(item => location.pathname.startsWith(item.path))?.text ?? 'Dashboard'}
+            {visibleNavItems.find(item => location.pathname.startsWith(item.path))?.text ?? 'Dashboard'}
           </Typography>
           
           <IconButton color="inherit" onClick={toggleThemeMode}>

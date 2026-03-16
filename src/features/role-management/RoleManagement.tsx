@@ -56,6 +56,7 @@ import {
 } from '@mui/icons-material';
 import ManagementLayout from '../../components/shared/ManagementLayout';
 import { StyledTableHead, StyledTableCell, StyledTableRow } from '../../components/shared/StyledTableComponents';
+import { useScopes } from '@hooks/useScopes';
 import { Role, CreateRoleRequest, UpdateRoleRequest, Scope } from '@/types';
 import { RoleService } from '@/services/role.service';
 import { ScopeService } from '@/services/scope.service';
@@ -72,6 +73,9 @@ const MenuProps = {
 };
 
 const RoleManagement: React.FC = () => {
+  const { hasScope } = useScopes();
+  const canManageRoles = hasScope('ManageUserRolesAndPermissions'); // POST/PUT/DELETE /roles
+
   const [roles, setRoles] = useState<Role[]>([]);
   const [availableScopes, setAvailableScopes] = useState<Scope[]>([]);
   const [loading, setLoading] = useState(true);
@@ -298,21 +302,23 @@ const RoleManagement: React.FC = () => {
               }}
             />
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleCreate}
-            sx={{
-              borderRadius: 2,
-              textTransform: 'none',
-              background: 'linear-gradient(45deg, #00a6e3, #0080c0)',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #0080c0, #006699)',
-              }
-            }}
-          >
-            Create Role
-          </Button>
+          {canManageRoles && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCreate}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                background: 'linear-gradient(45deg, #00a6e3, #0080c0)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #0080c0, #006699)',
+                }
+              }}
+            >
+              Create Role
+            </Button>
+          )}
         </Box>
 
         {/* Roles Table */}
@@ -446,58 +452,62 @@ const RoleManagement: React.FC = () => {
                   </TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                      <Tooltip title={isPredefinedRole(role.name) ? "Cannot edit system role" : "Edit role"}>
-                        <span>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEdit(role)}
-                            disabled={isPredefinedRole(role.name)}
-                            aria-label={isPredefinedRole(role.name) ? "Cannot edit system role" : "Edit role"}
-                            sx={{
-                              backgroundColor: isPredefinedRole(role.name) ? 'action.disabled' : 'primary.main',
-                              color: isPredefinedRole(role.name) ? 'text.disabled' : 'white',
-                              '&:hover': {
-                                backgroundColor: isPredefinedRole(role.name) ? 'action.disabled' : 'primary.dark',
-                              },
-                              '&.Mui-disabled': {
-                                backgroundColor: 'action.disabled',
-                                color: 'text.disabled',
-                              },
-                              borderRadius: 1,
-                              width: 32,
-                              height: 32
-                            }}
-                          >
-                            <EditIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                      <Tooltip title={isPredefinedRole(role.name) ? "Cannot delete system role" : "Delete role"}>
-                        <span>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDelete(role)}
-                            disabled={isPredefinedRole(role.name)}
-                            aria-label={isPredefinedRole(role.name) ? "Cannot delete system role" : "Delete role"}
-                            sx={{
-                              backgroundColor: isPredefinedRole(role.name) ? 'action.disabled' : 'error.main',
-                              color: isPredefinedRole(role.name) ? 'text.disabled' : 'white',
-                              '&:hover': {
-                                backgroundColor: isPredefinedRole(role.name) ? 'action.disabled' : 'error.dark',
-                              },
-                              '&.Mui-disabled': {
-                                backgroundColor: 'action.disabled',
-                                color: 'text.disabled',
-                              },
-                              borderRadius: 1,
-                              width: 32,
-                              height: 32
-                            }}
-                          >
-                            <DeleteIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
+                      {canManageRoles && (
+                        <Tooltip title={isPredefinedRole(role.name) ? "Cannot edit system role" : "Edit role"}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEdit(role)}
+                              disabled={isPredefinedRole(role.name)}
+                              aria-label={isPredefinedRole(role.name) ? "Cannot edit system role" : "Edit role"}
+                              sx={{
+                                backgroundColor: isPredefinedRole(role.name) ? 'action.disabled' : 'primary.main',
+                                color: isPredefinedRole(role.name) ? 'text.disabled' : 'white',
+                                '&:hover': {
+                                  backgroundColor: isPredefinedRole(role.name) ? 'action.disabled' : 'primary.dark',
+                                },
+                                '&.Mui-disabled': {
+                                  backgroundColor: 'action.disabled',
+                                  color: 'text.disabled',
+                                },
+                                borderRadius: 1,
+                                width: 32,
+                                height: 32
+                              }}
+                            >
+                              <EditIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
+                      {canManageRoles && (
+                        <Tooltip title={isPredefinedRole(role.name) ? "Cannot delete system role" : "Delete role"}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDelete(role)}
+                              disabled={isPredefinedRole(role.name)}
+                              aria-label={isPredefinedRole(role.name) ? "Cannot delete system role" : "Delete role"}
+                              sx={{
+                                backgroundColor: isPredefinedRole(role.name) ? 'action.disabled' : 'error.main',
+                                color: isPredefinedRole(role.name) ? 'text.disabled' : 'white',
+                                '&:hover': {
+                                  backgroundColor: isPredefinedRole(role.name) ? 'action.disabled' : 'error.dark',
+                                },
+                                '&.Mui-disabled': {
+                                  backgroundColor: 'action.disabled',
+                                  color: 'text.disabled',
+                                },
+                                borderRadius: 1,
+                                width: 32,
+                                height: 32
+                              }}
+                            >
+                              <DeleteIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
                 </StyledTableRow>
