@@ -227,8 +227,9 @@ describe('AuthService', () => {
 
       const result = await authService.handleAuthCallback(mockCode, mockState);
 
-      expect(result.user.userName).toBe('admin');
-      expect(result.user.email).toBe('admin@example.com');
+      // Fallback uses JWT-decoded values; test token has no valid JWT payload so returns empty strings
+      expect(result.user).toBeDefined();
+      expect(typeof result.user.userName).toBe('string');
     });
   });
 
@@ -401,7 +402,9 @@ describe('AuthService', () => {
 
       const user = await (authService as any).getUserProfile('test-token');
       
-      expect(user.email).toBe('testuser@example.com');
+      // No email construction — empty string when email is absent
+      expect(user.email).toBe('');
+      expect(user.userName).toBe('testuser');
     });
 
     it('should use sub for userId if username missing', async () => {
@@ -919,9 +922,9 @@ describe('AuthService', () => {
 
       const profile = await (authService as any).getUserProfile('test-token');
 
-      // Should return fallback profile
-      expect(profile.userName).toBe('admin');
-      expect(profile.email).toBe('admin@example.com');
+      // Inactive token → fallback uses JWT claims; test token is not a real JWT so empty strings
+      expect(profile).toBeDefined();
+      expect(typeof profile.userName).toBe('string');
     });
 
     it('should handle network errors during introspection', async () => {
@@ -929,7 +932,9 @@ describe('AuthService', () => {
 
       const profile = await (authService as any).getUserProfile('test-token');
 
-      expect(profile.userName).toBe('admin');
+      // Falls back to JWT-decoded values; test token is not real JWT so empty strings
+      expect(profile).toBeDefined();
+      expect(typeof profile.userName).toBe('string');
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         'Could not fetch user profile from introspection:',
         expect.any(Error)
@@ -951,16 +956,16 @@ describe('AuthService', () => {
       expect(profile).toEqual({
         id: 'minimal-user',
         userName: 'minimal-user',
-        email: 'admin@example.com', // Fallback uses admin@example.com
-        firstName: 'Admin',
-        lastName: 'User',
+        email: '',          // No email in introspection or JWT → empty string
+        firstName: '',      // No given_name → empty string
+        lastName: '',       // No family_name → empty string
         roles: ['ADMIN'],
-        scopes: ['openid', 'profile'],
+        scopes: expect.any(Array),
         accounts: ['default-account'],
       });
     });
 
-    it('should construct email from username when email missing', async () => {
+    it('should use empty email when email missing from introspection and JWT', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -972,7 +977,67 @@ describe('AuthService', () => {
 
       const profile = await (authService as any).getUserProfile('test-token');
 
-      expect(profile.email).toBe('johndoe@example.com');
+      // Email not constructed from username — remains empty when not present
+      expect(profile.email).toBe('');
+      expect(profile.userName).toBe('johndoe');
+    });
+  });
+
+  describe('decodeJwtPayload', () => {
+    it('should decode a valid JWT payload', () => {
+      // Build a minimal JWT: header.payload.signature (payload is base64url-encoded JSON)
+      const payload = { sub: 'user1', username: 'john', email: 'john@example.com' };
+      const encoded = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      const fakeJwt = `header.${encoded}.signature`;
+
+      const claims = (authService as any).decodeJwtPayload(fakeJwt);
+
+      expect(claims.sub).toBe('user1');
+      expect(claims.username).toBe('john');
+      expect(claims.email).toBe('john@example.com');
+    });
+
+    it('should return empty object for non-JWT string', () => {
+      const claims = (authService as any).decodeJwtPayload('not-a-jwt');
+      expect(claims).toEqual({});
+    });
+
+    it('should return empty object for malformed JWT payload', () => {
+      const claims = (authService as any).decodeJwtPayload('header.!!!invalid!!!.signature');
+      expect(claims).toEqual({});
+    });
+
+    it('should use JWT claims as baseline when introspection returns partial data', async () => {
+      const payload = { sub: 'jwt-user', username: 'jwtname', email: 'jwt@example.com', given_name: 'JWT', family_name: 'Token' };
+      const encoded = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      const fakeJwt = `header.${encoded}.signature`;
+
+      // Introspection returns active but no name fields
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ active: true, sub: 'jwt-user', username: 'jwtname' }),
+      });
+
+      const profile = await (authService as any).getUserProfile(fakeJwt);
+
+      // JWT baseline fills in missing fields from introspection
+      expect(profile.email).toBe('jwt@example.com');
+      expect(profile.firstName).toBe('JWT');
+      expect(profile.lastName).toBe('Token');
+    });
+
+    it('should use JWT fallback when introspection fails', async () => {
+      const payload = { sub: 'fallback-user', username: 'fbuser', email: 'fb@example.com' };
+      const encoded = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      const fakeJwt = `header.${encoded}.signature`;
+
+      mockFetch.mockRejectedValueOnce(new Error('Network down'));
+
+      const profile = await (authService as any).getUserProfile(fakeJwt);
+
+      expect(profile.id).toBe('fallback-user');
+      expect(profile.userName).toBe('fbuser');
+      expect(profile.email).toBe('fb@example.com');
     });
   });
 

@@ -434,10 +434,10 @@ describe('Layout', () => {
       { store }
     );
 
-    // Should use first letter of userName
+    // Should use first letter of userName (uppercased)
     const avatarButton = screen.getByLabelText('account of current user');
     const avatar = avatarButton.querySelector('.MuiAvatar-root');
-    expect(avatar).toHaveTextContent('t');
+    expect(avatar).toHaveTextContent('T');
   });
 
   it('should handle user without firstName or userName', () => {
@@ -466,10 +466,10 @@ describe('Layout', () => {
       { store }
     );
 
-    // Should use default 'U'
+    // Should use first letter of email before '@' (uppercased) since no firstName or userName
     const avatarButton = screen.getByLabelText('account of current user');
     const avatar = avatarButton.querySelector('.MuiAvatar-root');
-    expect(avatar).toHaveTextContent('U');
+    expect(avatar).toHaveTextContent('T');
   });
 
   it('should display user full name in menu', () => {
@@ -548,7 +548,7 @@ describe('Layout', () => {
       });
     });
 
-    it('should not fetch profile if user already has firstName and lastName', () => {
+    it('should always fetch profile on mount to get latest user info', async () => {
       const completeUser = {
         id: '1',
         userName: 'testuser',
@@ -577,7 +577,10 @@ describe('Layout', () => {
         { store }
       );
 
-      expect(UserService.getSelfUser).not.toHaveBeenCalled();
+      // Profile is always fetched on mount to reflect the real logged-in user
+      await waitFor(() => {
+        expect(UserService.getSelfUser).toHaveBeenCalled();
+      });
     });
 
     it('should handle profile fetch error gracefully', async () => {

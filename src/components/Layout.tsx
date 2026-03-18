@@ -137,7 +137,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { themeMode, toggleThemeMode } = useTheme();
-  const { hasAnyScope } = useScopes();
+  const { hasAnyScope, hasScope } = useScopes();
+  const canSelfManage = hasScope('SelfManage');
 
   // Filter nav items by token scopes: items with no requiredScopes are always shown;
   // items with requiredScopes are shown only if the token contains at least one.
@@ -191,10 +192,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       }
     };
 
-    if (user && (!user.firstName || !user.lastName)) {
+    if (user) {
       fetchUserProfile();
     }
-  }, [dispatch, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, user?.id]);
 
   const handleDrawerToggle = () => {
     dispatch(toggleSidebar());
@@ -376,7 +378,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             color="inherit"
           >
             <Avatar sx={{ width: 32, height: 32 }}>
-              {user?.firstName?.[0] ?? user?.userName?.[0] ?? 'U'}
+              {(user?.firstName?.[0] ?? user?.userName?.split('@')[0]?.[0] ?? user?.email?.split('@')[0]?.[0] ?? 'U').toUpperCase()}
             </Avatar>
           </IconButton>
           
@@ -425,21 +427,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 ? user.lastName 
                   ? `${user.firstName} ${user.lastName}`
                   : user.firstName
-                : user?.userName || 'User'}
+                : user?.userName
+                  ? user.userName.split('@')[0]
+                  : user?.email
+                    ? user.email.split('@')[0]
+                    : 'User'}
             </MenuItem>
             <Divider />
-            <MenuItem onClick={() => { setAnchorEl(null); navigate('/uidam/profile'); }}>
-              <ListItemIcon>
-                <AccountCircle fontSize="small" />
-              </ListItemIcon>
-              Profile
-            </MenuItem>
-            <MenuItem onClick={() => { setAnchorEl(null); navigate('/uidam/change-password'); }}>
-              <ListItemIcon>
-                <LockResetIcon fontSize="small" />
-              </ListItemIcon>
-              Change Password
-            </MenuItem>
+            {canSelfManage && (
+              <MenuItem onClick={() => { setAnchorEl(null); navigate('/uidam/profile'); }}>
+                <ListItemIcon>
+                  <AccountCircle fontSize="small" />
+                </ListItemIcon>
+                Profile
+              </MenuItem>
+            )}
+            {canSelfManage && (
+              <MenuItem onClick={() => { setAnchorEl(null); navigate('/uidam/change-password'); }}>
+                <ListItemIcon>
+                  <LockResetIcon fontSize="small" />
+                </ListItemIcon>
+                Change Password
+              </MenuItem>
+            )}
             <MenuItem onClick={() => { setAnchorEl(null); navigate('/uidam/sessions'); }}>
               <ListItemIcon>
                 <DevicesIcon fontSize="small" />

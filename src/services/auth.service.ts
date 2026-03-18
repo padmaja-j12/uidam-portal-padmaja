@@ -325,11 +325,35 @@ export class AuthService {
   }
 
   /**
-   * Get user profile information using token introspection
+   * Decode a JWT token payload without verification.
+   * @param {string} token - The JWT token to decode
+   * @returns {Record<string, unknown>} The decoded payload claims
+   */
+  private decodeJwtPayload(token: string): Record<string, unknown> {
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+        return JSON.parse(payload);
+      }
+    } catch { /* ignore */ }
+    return {};
+  }
+
+  /**
+   * Get user profile information using token introspection.
    * @param {string} accessToken - The access token to introspect
    * @returns {Promise<AuthUser>} The user profile information
    */
   private async getUserProfile(accessToken: string): Promise<AuthUser> {
+    // Decode JWT first as a reliable baseline (no network call required)
+    const claims = this.decodeJwtPayload(accessToken);
+    const jwtId       = (claims.sub       || claims.user_id    || '') as string;
+    const jwtUsername = (claims.username  || claims.sub        || '') as string;
+    const jwtEmail    = (claims.email     || '') as string;
+    const jwtFirst    = (claims.given_name  || '') as string;
+    const jwtLast     = (claims.family_name || '') as string;
+
     try {
       const response = await fetch(`/oauth2/introspect`, { // Use relative URL to go through Vite/nginx proxy
         method: 'POST',
@@ -346,13 +370,13 @@ export class AuthService {
         const tokenInfo = await response.json();
         
         if (tokenInfo.active) {
-          // Extract user information from token introspection
+          const username = tokenInfo.username || tokenInfo.sub || jwtUsername || '';
           return {
-            id: tokenInfo.sub || tokenInfo.username || '1',
-            userName: tokenInfo.username || tokenInfo.sub || 'admin',
-            email: tokenInfo.email || `${tokenInfo.username || 'admin'}@example.com`,
-            firstName: tokenInfo.given_name || 'Admin',
-            lastName: tokenInfo.family_name || 'User', 
+            id: tokenInfo.sub || username || jwtId || '1',
+            userName: username,
+            email: tokenInfo.email || jwtEmail,
+            firstName: tokenInfo.given_name || jwtFirst || '',
+            lastName: tokenInfo.family_name || jwtLast || '',
             roles: tokenInfo.roles || ['ADMIN'],
             scopes: tokenInfo.scope ? tokenInfo.scope.split(' ') : [...OAUTH_CONFIG.SCOPES],
             accounts: tokenInfo.accounts || ['default-account'],
@@ -363,13 +387,13 @@ export class AuthService {
       console.warn('Could not fetch user profile from introspection:', error);
     }
 
-    // Fallback to basic user info
+    // Fallback: use whatever we extracted directly from the JWT
     return {
-      id: '1',
-      userName: 'admin',
-      email: 'admin@example.com',
-      firstName: 'Admin',
-      lastName: 'User',
+      id: jwtId || '1',
+      userName: jwtUsername,
+      email: jwtEmail,
+      firstName: jwtFirst,
+      lastName: jwtLast,
       roles: ['ADMIN'],
       scopes: [...OAUTH_CONFIG.SCOPES],
       accounts: ['default-account'],
@@ -428,8 +452,10 @@ export class AuthService {
     
     if (accessToken) {
       try {
-        // Generate state for logout flow
-        const state = Math.random().toString(36).substring(2, 15);
+        // Generate cryptographically secure state for logout flow
+        const stateArray = new Uint8Array(16);
+        crypto.getRandomValues(stateArray);
+        const state = Array.from(stateArray, b => b.toString(16).padStart(2, '0')).join('');
         
         // Construct logout URL with access_token as query parameter
         const logoutUrl = `${API_CONFIG.AUTH_SERVER_URL}${API_CONFIG.SESSION_API_PREFIX}/oauth2/logout?access_token=${encodeURIComponent(accessToken)}`;

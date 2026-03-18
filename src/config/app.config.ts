@@ -75,7 +75,7 @@ export const OAUTH_CONFIG = {
   SCOPES: [
     'SelfManage',
     'ViewUsers',
-   'ManageUsers',
+    'ManageUsers',
     'ManageUserRolesAndPermissions',
     'ManageAccounts',
     'ViewAccounts'  
