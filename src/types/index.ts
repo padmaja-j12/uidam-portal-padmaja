@@ -396,7 +396,7 @@ export interface ActiveSession {
   deviceInfo: string;
   browser?: string;
   os?: string;
-  ipAddress: string;
+  ipAddress?: string;
   location?: string;
   loginTime: string;
   lastActivity: string;

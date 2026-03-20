@@ -208,13 +208,15 @@ const AdminSessionsModal: React.FC<AdminSessionsModalProps> = ({ open, username,
                         <strong>OS:</strong> {session.os}
                       </Typography>
                     )}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <LocationIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        {session.ipAddress}
-                        {session.location ? ` — ${session.location}` : ''}
-                      </Typography>
-                    </Box>
+                    {(session.ipAddress || session.location) && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <LocationIcon fontSize="small" color="action" />
+                        <Typography variant="body2" color="text.secondary">
+                          {session.ipAddress}
+                          {session.location ? ` — ${session.location}` : ''}
+                        </Typography>
+                      </Box>
+                    )}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <AccessTimeIcon fontSize="small" color="action" />
                       <Typography variant="body2" color="text.secondary">

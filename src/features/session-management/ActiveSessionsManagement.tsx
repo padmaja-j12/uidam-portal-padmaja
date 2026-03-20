@@ -255,14 +255,16 @@ const ActiveSessionsManagement: React.FC = () => {
                           </Typography>
                         </Grid>
                       )}
-                      <Grid item xs={12}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <LocationIcon fontSize="small" color="action" />
-                          <Typography variant="body2" color="text.secondary">
-                            <strong>IP Address:</strong> {session.ipAddress}
-                          </Typography>
-                        </Box>
-                      </Grid>
+                      {session.ipAddress && (
+                        <Grid item xs={12}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <LocationIcon fontSize="small" color="action" />
+                            <Typography variant="body2" color="text.secondary">
+                              <strong>IP Address:</strong> {session.ipAddress}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
                       {session.location && (
                         <Grid item xs={12}>
                           <Typography variant="body2" color="text.secondary">

@@ -768,6 +768,36 @@ describe('UserService', () => {
           expect.anything()
         );
       });
+
+      it('should throw when no token is stored', async () => {
+        mockLocalStorage.removeItem('uidam_admin_token');
+        await expect(UserService.getSelfUser()).rejects.toThrow('Authentication token not found');
+      });
+
+      it('should add user-id header when JWT contains user_id claim', async () => {
+        const payload = btoa(JSON.stringify({ user_id: 'uid-42' }));
+        const fakeJwt = `header.${payload}.signature`;
+        mockLocalStorage.setItem('uidam_admin_token', fakeJwt);
+
+        const mockResponse = { code: 'SUCCESS', data: mockUser };
+        (global.fetch as jest.Mock).mockResolvedValue({ json: async () => mockResponse });
+
+        await UserService.getSelfUser();
+
+        const callHeaders = (global.fetch as jest.Mock).mock.calls[0][1].headers as Record<string, string>;
+        expect(callHeaders['user-id']).toBe('uid-42');
+      });
+
+      it('should omit user-id header when JWT is malformed', async () => {
+        mockLocalStorage.setItem('uidam_admin_token', 'not.a.valid.jwt.at.all');
+
+        const mockResponse = { code: 'SUCCESS', data: mockUser };
+        (global.fetch as jest.Mock).mockResolvedValue({ json: async () => mockResponse });
+
+        // Should not throw
+        const result = await UserService.getSelfUser();
+        expect(result.code).toBe('SUCCESS');
+      });
     });
 
     describe('updateSelfUser', () => {
@@ -782,6 +812,25 @@ describe('UserService', () => {
         const result = await UserService.updateSelfUser(patches);
 
         expect(result.code).toBe('SUCCESS');
+      });
+
+      it('should throw when no token is stored', async () => {
+        mockLocalStorage.removeItem('uidam_admin_token');
+        const patches = [{ op: 'replace', path: '/firstName', value: 'X' } as const];
+        await expect(UserService.updateSelfUser(patches)).rejects.toThrow('Authentication token not found');
+      });
+
+      it('should send PATCH to /v1/users/self', async () => {
+        const patches = [{ op: 'replace', path: '/email', value: 'new@test.com' } as const];
+        const mockResponse = { code: 'SUCCESS', data: mockUser };
+        (global.fetch as jest.Mock).mockResolvedValue({ json: async () => mockResponse });
+
+        await UserService.updateSelfUser(patches);
+
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/v1/users/self'),
+          expect.objectContaining({ method: 'PATCH', body: JSON.stringify(patches) })
+        );
       });
     });
 

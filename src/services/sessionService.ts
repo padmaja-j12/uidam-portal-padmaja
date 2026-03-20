@@ -92,12 +92,36 @@ export class SessionService {
   }
 
   /**
+   * Maps the raw API response shape { status, data: { tokens, totalTokens } }
+   * to the internal SessionsResponse shape { sessions, totalCount }.
+   */
+  private static mapTokensResponse(raw: any): SessionsResponse {
+    const tokens: any[] = raw?.data?.tokens ?? [];
+    return {
+      sessions: tokens.map((t: any) => ({
+        sessionId: t.id,
+        deviceInfo: t.deviceInfo ?? '',
+        loginTime: t.accessTokenIssuedAt,
+        lastActivity: t.accessTokenExpiresAt,
+        isCurrent: t.isCurrentSession ?? false,
+        ipAddress: t.ipAddress,
+        browser: t.browser,
+        os: t.os,
+        location: t.location,
+        userAgent: t.userAgent,
+      })),
+      totalCount: raw?.data?.totalTokens ?? 0,
+    };
+  }
+
+  /**
    * Get all active sessions for the current user.
    * @returns {Promise<SessionsResponse>} List of active sessions
    */
   static async getActiveSessions(): Promise<SessionsResponse> {
     const path = `${this.getPrefix()}/self/tokens/active`;
-    return this.request<SessionsResponse>(path, { method: 'GET' });
+    const raw = await this.request<any>(path, { method: 'GET' });
+    return SessionService.mapTokensResponse(raw);
   }
 
   /**
@@ -117,7 +141,8 @@ export class SessionService {
    */
   static async getAdminActiveSessions(username: string): Promise<SessionsResponse> {
     const path = `${this.getPrefix()}/admin/tokens/active`;
-    return this.request<SessionsResponse>(path, { method: 'POST', body: JSON.stringify({ username }) });
+    const raw = await this.request<any>(path, { method: 'POST', body: JSON.stringify({ username }) });
+    return SessionService.mapTokensResponse(raw);
   }
 
   /**

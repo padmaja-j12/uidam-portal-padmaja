@@ -54,15 +54,55 @@ const mockLocalStorage = (() => {
 })();
 Object.defineProperty(window, 'localStorage', { value: mockLocalStorage, configurable: true });
 
+// Raw API shapes (what the backend actually returns)
+const mockRawSelfResponse = {
+  status: 'success',
+  data: {
+    tokens: [
+      {
+        id: 'session-1',
+        clientName: 'test-portal',
+        accessTokenIssuedAt: '2026-02-19T10:00:00Z',
+        accessTokenExpiresAt: '2026-02-19T11:00:00Z',
+        deviceInfo: 'Chrome on Windows',
+        isCurrentSession: true,
+      },
+    ],
+    totalTokens: 1,
+  },
+};
+
+const mockRawAdminResponse = {
+  status: 'success',
+  data: {
+    tokens: [
+      {
+        id: 'session-2',
+        clientName: 'test-portal',
+        accessTokenIssuedAt: '2026-02-20T08:00:00Z',
+        accessTokenExpiresAt: '2026-02-20T09:00:00Z',
+        deviceInfo: 'Firefox on Linux',
+        isCurrentSession: false,
+      },
+    ],
+    totalTokens: 1,
+  },
+};
+
+// Mapped shapes (what SessionService returns after transformation)
 const mockSelfSessionsResponse: SessionsResponse = {
   sessions: [
     {
       sessionId: 'session-1',
       deviceInfo: 'Chrome on Windows',
-      ipAddress: '192.168.1.1',
       loginTime: '2026-02-19T10:00:00Z',
       lastActivity: '2026-02-19T11:00:00Z',
       isCurrent: true,
+      ipAddress: undefined,
+      browser: undefined,
+      os: undefined,
+      location: undefined,
+      userAgent: undefined,
     },
   ],
   totalCount: 1,
@@ -73,10 +113,14 @@ const mockAdminSessionsResponse: SessionsResponse = {
     {
       sessionId: 'session-2',
       deviceInfo: 'Firefox on Linux',
-      ipAddress: '10.0.0.1',
       loginTime: '2026-02-20T08:00:00Z',
       lastActivity: '2026-02-20T09:00:00Z',
       isCurrent: false,
+      ipAddress: undefined,
+      browser: undefined,
+      os: undefined,
+      location: undefined,
+      userAgent: undefined,
     },
   ],
   totalCount: 1,
@@ -93,11 +137,11 @@ describe('SessionService', () => {
   });
 
   describe('getActiveSessions', () => {
-    it('should fetch all active sessions for current user successfully', async () => {
+    it('should fetch and map active sessions for current user successfully', async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => mockSelfSessionsResponse,
+        json: async () => mockRawSelfResponse,
       });
 
       const result = await SessionService.getActiveSessions();
@@ -113,6 +157,67 @@ describe('SessionService', () => {
         })
       );
       expect(result).toEqual(mockSelfSessionsResponse);
+    });
+
+    it('should map token id to sessionId', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockRawSelfResponse,
+      });
+      const result = await SessionService.getActiveSessions();
+      expect(result.sessions[0].sessionId).toBe('session-1');
+    });
+
+    it('should map isCurrentSession to isCurrent', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockRawSelfResponse,
+      });
+      const result = await SessionService.getActiveSessions();
+      expect(result.sessions[0].isCurrent).toBe(true);
+    });
+
+    it('should map accessTokenIssuedAt to loginTime', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockRawSelfResponse,
+      });
+      const result = await SessionService.getActiveSessions();
+      expect(result.sessions[0].loginTime).toBe('2026-02-19T10:00:00Z');
+    });
+
+    it('should map accessTokenExpiresAt to lastActivity', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockRawSelfResponse,
+      });
+      const result = await SessionService.getActiveSessions();
+      expect(result.sessions[0].lastActivity).toBe('2026-02-19T11:00:00Z');
+    });
+
+    it('should map totalTokens to totalCount', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockRawSelfResponse,
+      });
+      const result = await SessionService.getActiveSessions();
+      expect(result.totalCount).toBe(1);
+    });
+
+    it('should return empty sessions when data.tokens is missing', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ status: 'success', data: {} }),
+      });
+      const result = await SessionService.getActiveSessions();
+      expect(result.sessions).toEqual([]);
+      expect(result.totalCount).toBe(0);
     });
 
     it('should handle errors when fetching sessions', async () => {
@@ -159,11 +264,11 @@ describe('SessionService', () => {
   });
 
   describe('getAdminActiveSessions', () => {
-    it('should fetch active sessions for a specific user (admin)', async () => {
+    it('should fetch and map active sessions for a specific user (admin)', async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => mockAdminSessionsResponse,
+        json: async () => mockRawAdminResponse,
       });
 
       const result = await SessionService.getAdminActiveSessions('testuser');

@@ -15,7 +15,17 @@
 *
 * <p>SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
-import { handleApiResponse, getApiHeaders, makeFetchRequest } from './apiUtils';
+// Mock tokenManager BEFORE importing apiUtils so fetchWithTokenRefresh picks it up
+jest.mock('@/utils/tokenManager', () => ({
+  handleTokenRefresh: jest.fn(),
+  shouldRefreshToken: jest.fn().mockReturnValue(false),
+}));
+
+import { handleApiResponse, getApiHeaders, makeFetchRequest, fetchWithTokenRefresh, parseJsonSafe } from './apiUtils';
+import { handleTokenRefresh, shouldRefreshToken } from '@/utils/tokenManager';
+
+const mockShouldRefreshToken = shouldRefreshToken as jest.Mock;
+const mockHandleTokenRefresh = handleTokenRefresh as jest.Mock;
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -290,6 +300,191 @@ describe('apiUtils', () => {
         success: false,
         error: 'Failed to test operation'
       });
+    });
+  });
+
+  describe('getApiHeaders — JWT user_id extraction', () => {
+    it('extracts user_id from a valid JWT and adds user-id header', () => {
+      // Build a minimal JWT with user_id claim
+      const payload = btoa(JSON.stringify({ user_id: 'uid-42', sub: 'testuser' }));
+      const fakeJwt = `header.${payload}.signature`;
+      localStorageMock.setItem('uidam_admin_token', fakeJwt);
+
+      const headers = getApiHeaders() as Record<string, string>;
+
+      expect(headers['user-id']).toBe('uid-42');
+    });
+
+    it('falls back to userId claim when user_id is absent', () => {
+      const payload = btoa(JSON.stringify({ userId: 'uid-99' }));
+      const fakeJwt = `header.${payload}.signature`;
+      localStorageMock.setItem('uidam_admin_token', fakeJwt);
+
+      const headers = getApiHeaders() as Record<string, string>;
+
+      expect(headers['user-id']).toBe('uid-99');
+    });
+
+    it('does not add user-id header when JWT has no id claim', () => {
+      const payload = btoa(JSON.stringify({ name: 'John' }));
+      const fakeJwt = `header.${payload}.signature`;
+      localStorageMock.setItem('uidam_admin_token', fakeJwt);
+
+      const headers = getApiHeaders() as Record<string, string>;
+
+      expect(headers['user-id']).toBeUndefined();
+    });
+
+    it('proceeds without user-id when JWT is malformed', () => {
+      localStorageMock.setItem('uidam_admin_token', 'not-a-valid-jwt');
+      // Should not throw
+      expect(() => getApiHeaders()).not.toThrow();
+    });
+  });
+
+  describe('parseJsonSafe', () => {
+    it('parses normal JSON without modification', () => {
+      const json = JSON.stringify({ id: 123, name: 'Test' });
+      const result = parseJsonSafe<{ id: number; name: string }>(json);
+      expect(result).toEqual({ id: 123, name: 'Test' });
+    });
+
+    it('preserves large numeric id values as strings', () => {
+      const json = '{"id": 12345678901234567890, "name": "BigId"}';
+      const result = parseJsonSafe<{ id: string; name: string }>(json);
+      // The large number should be a quoted string, not a corrupted float
+      expect(typeof result.id).toBe('string');
+      expect(result.id).toBe('12345678901234567890');
+    });
+
+    it('only quotes id values with 16+ digits', () => {
+      const json = '{"id": 123456789012345, "name": "SmallId"}';
+      const result = parseJsonSafe<{ id: number; name: string }>(json);
+      // 15 digits — should not be quoted (stays as number)
+      expect(typeof result.id).toBe('number');
+    });
+  });
+
+  describe('fetchWithTokenRefresh', () => {
+    beforeEach(() => {
+      mockShouldRefreshToken.mockReturnValue(false);
+      mockHandleTokenRefresh.mockResolvedValue(null);
+    });
+
+    it('makes request normally when token is not expired', async () => {
+      const mockResponse = { ok: true, status: 200 };
+      (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+
+      const result = await fetchWithTokenRefresh('https://api.test.com/data', { method: 'GET' });
+
+      expect(result).toBe(mockResponse);
+      expect(mockHandleTokenRefresh).not.toHaveBeenCalled();
+    });
+
+    it('refreshes token before request when token is expired', async () => {
+      mockShouldRefreshToken.mockReturnValue(true);
+      mockHandleTokenRefresh.mockResolvedValue('new-access-token');
+      const mockResponse = { ok: true, status: 200 };
+      (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+
+      const result = await fetchWithTokenRefresh('https://api.test.com/data', {});
+
+      expect(mockHandleTokenRefresh).toHaveBeenCalled();
+      expect(result).toBe(mockResponse);
+    });
+
+    it('throws when token is expired and refresh fails', async () => {
+      mockShouldRefreshToken.mockReturnValue(true);
+      mockHandleTokenRefresh.mockResolvedValue(null); // refresh failed
+
+      await expect(
+        fetchWithTokenRefresh('https://api.test.com/data', {})
+      ).rejects.toThrow('Authentication required - token refresh failed');
+    });
+
+    it('retries with new token on 401 response', async () => {
+      mockHandleTokenRefresh.mockResolvedValue('refreshed-token');
+      const unauthorizedResponse = { ok: false, status: 401 };
+      const retryResponse = { ok: true, status: 200 };
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce(unauthorizedResponse)
+        .mockResolvedValueOnce(retryResponse);
+
+      const result = await fetchWithTokenRefresh('https://api.test.com/protected', {});
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(result).toBe(retryResponse);
+    });
+
+    it('throws when 401 and token refresh fails during retry', async () => {
+      mockHandleTokenRefresh.mockResolvedValue(null);
+      const unauthorizedResponse = { ok: false, status: 401 };
+      (global.fetch as jest.Mock).mockResolvedValue(unauthorizedResponse);
+
+      await expect(
+        fetchWithTokenRefresh('https://api.test.com/protected', {})
+      ).rejects.toThrow('Authentication failed - please log in again');
+    });
+  });
+
+  describe('decodeJwtToken', () => {
+    // Import the function (it's not imported at the top — add a local import)
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { decodeJwtToken } = require('./apiUtils');
+
+    it('returns the decoded payload from a valid JWT', () => {
+      // Build a minimal JWT: header.payload.signature
+      const payload = { sub: 'user-1', tenantId: 'tenant-abc', exp: 9999999999 };
+      const encoded = btoa(JSON.stringify(payload));
+      const token = `eyJhbGciOiJSUzI1NiJ9.${encoded}.signature`;
+
+      const result = decodeJwtToken(token);
+
+      expect(result).toMatchObject({ sub: 'user-1', tenantId: 'tenant-abc' });
+    });
+
+    it('returns null for a malformed token', () => {
+      const result = decodeJwtToken('not.a.valid.jwt.at.all');
+      expect(result).toBeNull();
+    });
+
+    it('returns null for a token with non-base64 payload', () => {
+      const result = decodeJwtToken('header.!!!invalid!!!.sig');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getTenantIdFromToken', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getTenantIdFromToken } = require('./apiUtils');
+
+    it('returns null when no token is stored', () => {
+      localStorageMock.clear();
+      expect(getTenantIdFromToken()).toBeNull();
+    });
+
+    it('returns tenantId field from JWT payload', () => {
+      const payload = { sub: 'user-1', tenantId: 'tenant-xyz' };
+      const token = `hdr.${btoa(JSON.stringify(payload))}.sig`;
+      localStorageMock.setItem('uidam_admin_token', token);
+
+      expect(getTenantIdFromToken()).toBe('tenant-xyz');
+    });
+
+    it('returns tenant_id field when tenantId is absent', () => {
+      const payload = { sub: 'user-1', tenant_id: 'tid-123' };
+      const token = `hdr.${btoa(JSON.stringify(payload))}.sig`;
+      localStorageMock.setItem('uidam_admin_token', token);
+
+      expect(getTenantIdFromToken()).toBe('tid-123');
+    });
+
+    it('returns null when neither tenantId nor tenant_id is present', () => {
+      const payload = { sub: 'user-1' };
+      const token = `hdr.${btoa(JSON.stringify(payload))}.sig`;
+      localStorageMock.setItem('uidam_admin_token', token);
+
+      expect(getTenantIdFromToken()).toBeNull();
     });
   });
 });

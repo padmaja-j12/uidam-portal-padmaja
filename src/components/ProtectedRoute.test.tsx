@@ -25,13 +25,23 @@ jest.mock('@config/runtimeConfig', () => ({
   loadConfig: jest.fn(),
 }));
 
-import { render } from '@testing-library/react';
+// Mock tokenManager so we can control refresh behaviour
+jest.mock('@/utils/tokenManager', () => ({
+  shouldRefreshToken: jest.fn().mockReturnValue(false),
+  handleTokenRefresh: jest.fn().mockResolvedValue(null),
+}));
+
+import { render, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import ProtectedRoute from './ProtectedRoute';
 import { authSlice } from '@store/slices/authSlice';
 import { uiSlice } from '@store/slices/uiSlice';
+import { shouldRefreshToken, handleTokenRefresh } from '@/utils/tokenManager';
+
+const mockShouldRefreshToken = shouldRefreshToken as jest.Mock;
+const mockHandleTokenRefresh = handleTokenRefresh as jest.Mock;
 
 // Mock Navigate component
 const mockNavigate = jest.fn();
@@ -239,6 +249,245 @@ describe('ProtectedRoute', () => {
       );
 
       expect(queryByText('Protected Content')).toBeInTheDocument();
+    });
+  });
+
+  // ─── Token refresh async paths ───────────────────────────────────────────
+
+  describe('token refresh flow', () => {
+    const createAuthenticatedStore = () =>
+      configureStore({
+        reducer: { auth: authSlice.reducer, ui: uiSlice.reducer },
+        preloadedState: {
+          auth: {
+            isAuthenticated: true,
+            isLoading: false,
+            user: {
+              id: 'user-1',
+              userName: 'testuser',
+              email: 'test@test.com',
+              firstName: 'Test',
+              lastName: 'User',
+              status: 'ACTIVE' as const,
+              accounts: [],
+              roles: [],
+              scopes: [],
+            },
+            tokens: {
+              accessToken: 'test-token',
+              refreshToken: 'refresh-token',
+              expiresIn: 3600,
+              tokenType: 'Bearer',
+            },
+            error: null,
+            loading: false,
+          },
+          ui: {
+            sidebarOpen: true,
+            themeMode: 'light' as const,
+            loading: false,
+            notification: null,
+          },
+        },
+      });
+
+    beforeEach(() => {
+      mockShouldRefreshToken.mockReturnValue(false);
+      mockHandleTokenRefresh.mockResolvedValue(null);
+      jest.clearAllMocks();
+    });
+
+    it('renders children immediately when isAuthenticated is true in store', async () => {
+      const store = createAuthenticatedStore();
+      const { getByText } = render(
+        <Provider store={store}>
+          <BrowserRouter>
+            <ProtectedRoute>
+              <div>Authenticated Content</div>
+            </ProtectedRoute>
+          </BrowserRouter>
+        </Provider>
+      );
+      await waitFor(() => expect(getByText('Authenticated Content')).toBeInTheDocument());
+    });
+
+    it('redirects when token refresh fails and no valid token found', async () => {
+      const store = createMockStore(false);
+      mockShouldRefreshToken.mockReturnValue(true);
+      mockHandleTokenRefresh.mockRejectedValue(new Error('refresh error'));
+
+      const { getByTestId } = render(
+        <Provider store={store}>
+          <BrowserRouter>
+            <ProtectedRoute>
+              <div>Protected Content</div>
+            </ProtectedRoute>
+          </BrowserRouter>
+        </Provider>
+      );
+
+      await waitFor(() => expect(getByTestId('navigate')).toBeInTheDocument());
+    });
+
+    it('redirects when token refresh returns null', async () => {
+      const store = createMockStore(false);
+      mockShouldRefreshToken.mockReturnValue(true);
+      mockHandleTokenRefresh.mockResolvedValue(null);
+
+      const { getByTestId } = render(
+        <Provider store={store}>
+          <BrowserRouter>
+            <ProtectedRoute>
+              <div>Protected Content</div>
+            </ProtectedRoute>
+          </BrowserRouter>
+        </Provider>
+      );
+
+      await waitFor(() => expect(getByTestId('navigate')).toBeInTheDocument());
+    });
+  });
+
+  // ─── Lines 56-109: scenarios that require tokens in localStorage ─────────
+
+  describe('token in localStorage paths', () => {
+    const createUnauthenticatedStore = () =>
+      configureStore({
+        reducer: { auth: authSlice.reducer, ui: uiSlice.reducer },
+        preloadedState: {
+          auth: {
+            isAuthenticated: false,
+            isLoading: false,
+            user: null,
+            tokens: null,
+            error: null,
+            loading: false,
+          },
+          ui: {
+            sidebarOpen: true,
+            themeMode: 'light' as const,
+            loading: false,
+            notification: null,
+          },
+        },
+      });
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Provide token AND refreshToken so the early-return on line 49-53 is NOT hit
+      localStorage.setItem('uidam_admin_token', 'old-token');
+      localStorage.setItem('uidam_admin_refresh_token', 'old-refresh');
+    });
+
+    it('dispatches loginSuccess and renders children when refresh succeeds', async () => {
+      // Also provide profile data so the if(userProfile && newRefreshToken && expiresAt) branch is hit
+      localStorage.setItem('uidam_user_profile', JSON.stringify({
+        id: 'user-1', userName: 'testuser', email: 'test@test.com',
+        firstName: 'Test', lastName: 'User', status: 'ACTIVE',
+        accounts: [], roles: [], scopes: [],
+      }));
+      localStorage.setItem('uidam_token_expires_at', String(Date.now() + 3600000));
+
+      mockShouldRefreshToken.mockReturnValue(true);
+      mockHandleTokenRefresh.mockResolvedValue('new-access-token');
+
+      const store = createUnauthenticatedStore();
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <BrowserRouter>
+            <ProtectedRoute>
+              <div>Protected Content</div>
+            </ProtectedRoute>
+          </BrowserRouter>
+        </Provider>
+      );
+
+      await waitFor(() => expect(getByText('Protected Content')).toBeInTheDocument());
+    });
+
+    it('redirects when refresh succeeds but userProfile is missing from localStorage', async () => {
+      // No userProfile / expiresAt → falls through to setShouldRedirect(true)
+      mockShouldRefreshToken.mockReturnValue(true);
+      mockHandleTokenRefresh.mockResolvedValue('new-access-token');
+
+      const store = createUnauthenticatedStore();
+
+      const { getByTestId } = render(
+        <Provider store={store}>
+          <BrowserRouter>
+            <ProtectedRoute>
+              <div>Protected Content</div>
+            </ProtectedRoute>
+          </BrowserRouter>
+        </Provider>
+      );
+
+      await waitFor(() => expect(getByTestId('navigate')).toBeInTheDocument());
+    });
+
+    it('restores Redux state from localStorage (page-refresh scenario)', async () => {
+      // Token is valid (should not refresh), but Redux auth state is empty
+      localStorage.setItem('uidam_user_profile', JSON.stringify({
+        id: 'user-1', userName: 'testuser', email: 'test@test.com',
+        firstName: 'Test', lastName: 'User', status: 'ACTIVE',
+        accounts: [], roles: [], scopes: [],
+      }));
+      localStorage.setItem('uidam_token_expires_at', String(Date.now() + 3600000));
+
+      mockShouldRefreshToken.mockReturnValue(false);
+
+      const store = createUnauthenticatedStore();
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <BrowserRouter>
+            <ProtectedRoute>
+              <div>Protected Content</div>
+            </ProtectedRoute>
+          </BrowserRouter>
+        </Provider>
+      );
+
+      await waitFor(() => expect(getByText('Protected Content')).toBeInTheDocument());
+    });
+
+    it('redirects when token valid but no userProfile in localStorage', async () => {
+      // shouldRefreshToken=false, but no userProfile → store stays unauthenticated → redirect
+      mockShouldRefreshToken.mockReturnValue(false);
+
+      const store = createUnauthenticatedStore();
+
+      const { getByTestId } = render(
+        <Provider store={store}>
+          <BrowserRouter>
+            <ProtectedRoute>
+              <div>Protected Content</div>
+            </ProtectedRoute>
+          </BrowserRouter>
+        </Provider>
+      );
+
+      await waitFor(() => expect(getByTestId('navigate')).toBeInTheDocument());
+    });
+
+    it('redirects when handleTokenRefresh throws (catch path)', async () => {
+      mockShouldRefreshToken.mockReturnValue(true);
+      mockHandleTokenRefresh.mockRejectedValue(new Error('network error on refresh'));
+
+      const store = createUnauthenticatedStore();
+
+      const { getByTestId } = render(
+        <Provider store={store}>
+          <BrowserRouter>
+            <ProtectedRoute>
+              <div>Protected Content</div>
+            </ProtectedRoute>
+          </BrowserRouter>
+        </Provider>
+      );
+
+      await waitFor(() => expect(getByTestId('navigate')).toBeInTheDocument());
     });
   });
 });
